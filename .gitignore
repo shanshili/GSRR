@@ -1,0 +1,11 @@
+__pychche__/**
+AutoEncoderSVG/**
+DAEGC/**
+.idea/**
+venv/**
+Modules/**
+data/**
+*.SVG
+*.png
+DAEGC/__pychche__/**
+
