@@ -64,7 +64,6 @@ for i in range(G_0.number_of_nodes()):  # 450 node
     # print(fea_mask_list)
 
 
-
     # copy基准图（防止直接删了基准图上的边）
     G = G_0.copy()
     # 删除与中心节点相邻的所有边
@@ -80,7 +79,8 @@ for i in range(G_0.number_of_nodes()):  # 450 node
 
 
     # 判断中心节点是否孤立
-    if nx.is_isolate(G, i) == True:
+    if (nx.is_isolate(G, i) ==
+            True):
         adj_perturbed = nx.to_pandas_adjacency(G)   # 已孤立，则汇总起来邻接矩阵
         perturbed_adj_set.append(adj_perturbed)
         # 获取标签 节点度/总节点数 （重要性特征？？）
@@ -108,4 +108,7 @@ print("perturbed_graph_fea",len(perturbed_graph_fea))
 np.savez('./perturbation_data/perturbed_graph.npz', perturbed_adj_set)  # 里面是一个(n, 450, 450)的张量：450个邻接矩阵
 np.savez('./perturbation_data/perturbed_label.npz', perturbed_graph_label)  # 450
 np.savez('./perturbation_data/perturbed_fea.npz', perturbed_graph_fea)  # 450
+np.savetxt("./perturbation_data/perturbed_graph.csv", perturbed_adj_set, delimiter=',')
+np.savetxt('./perturbation_data/perturbed_label.csv', perturbed_graph_label,delimiter=',')  # 450
+np.savetxt('./perturbation_data/perturbed_fea.csv', perturbed_graph_fea, delimiter=',')  # 450
 # '''

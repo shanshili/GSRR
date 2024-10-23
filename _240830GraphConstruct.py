@@ -55,7 +55,7 @@ def location_graph(location):
     nx.draw(location_g,pos = location,with_labels=True, alpha = 0.4, node_size=10, font_size = 3)
     # nx.draw_networkx_nodes(location_g, pos=location, nodelist = [0,1,2], node_size = 20, node_color="r")
     plt.title('Knn_4_graph')
-    # plt.show()
+    plt.show()
     #plt.savefig('Knn_4_graph2'+'.svg', format='svg')
     return location_g,A
 

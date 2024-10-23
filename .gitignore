@@ -1,6 +1,7 @@
 __pychche__/**
 AutoEncoderSVG/**
 DAEGC/**
+GraphNeuralNetwork-Resilience-ComplexNetworks/**
 .idea/**
 venv/**
 Modules/**
@@ -8,4 +9,7 @@ data/**
 *.SVG
 *.png
 DAEGC/__pychche__/**
-
+dataset/**
+*.npz
+*.memmap
+*.md
