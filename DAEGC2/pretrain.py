@@ -22,6 +22,9 @@ from _240830GraphConstruct import location_graph, topological_features_construct
 from _240810data import get_data2
 import matplotlib.pyplot as plt
 
+
+
+
 def pretrain(datasets,A):
     model = GAT(
         num_features=args.input_dim,

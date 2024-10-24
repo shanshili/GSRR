@@ -1,15 +1,22 @@
+import numpy as np
 import torch
 import torch.nn as nn
 from model import GAT
-import torch.nn.functional as F
-from param_parser import parameter_parser
+# from param_parser import parameter_parser
 from torchinfo import summary
 from torch_geometric.nn import global_mean_pool, global_add_pool
+import argparse
+import networkx as nx
+from torch.optim import Adam
+import torch.nn.functional as F
+import matplotlib.pyplot as plt
+import math
 
 
 class MFC_RMF(nn.Module):
     def __init__(self, input_size, hidden_size, output_size, args):
         super(MFC_RMF, self).__init__()
+        torch.manual_seed(1234)
         self.args = args
         # get model
         self.gat = GAT(input_size, hidden_size, output_size)
@@ -38,20 +45,20 @@ class MFC_RMF(nn.Module):
         edge_index_1 = graph_pair.edge_index_s
         edge_index_2 = graph_pair.edge_index_t
 
+        # 标准化
+        feature_1 = graph_pair.x_s.clone().detach()
+        mean_1 = torch.mean(feature_1) # 计算feature平均值
+        std_1 = torch.std(feature_1)  # 计算feature标准差
+        feature_1 = (feature_1 - mean_1) / std_1  # 标准化特征 标准正态分布
 
-        feature_1 = torch.tensor(graph_pair.x_s, dtype=torch.float32)
-        mean_1 = torch.mean(feature_1)
-        std_1 = torch.std(feature_1)
-        feature_1 = (feature_1 - mean_1) / std_1
-
-        feature_2 = torch.tensor(graph_pair.x_t, dtype=torch.float32)
+        feature_2 = graph_pair.x_t.clone().detach()
         mean_2 = torch.mean(feature_2)
         std_2 = torch.std(feature_2)
         feature_2 = (feature_2 - mean_2) / std_2
 
 
         label = graph_pair.label
-        label_exp = torch.exp(-1 * label)
+        label_exp = torch.exp(-1 * label) # 无用
 
         # 多粒度交叉表示
         # 局部自表示
@@ -114,13 +121,9 @@ class MFC_RMF(nn.Module):
         z_2 = torch.cat([miu_2_global, phi_2_global, psi_2_global, omega_2], dim=1).t()
         z = torch.cat([z_1, z_2], dim=0)
         # print(z.shape)
-        z = self.mlp(z.t())
+        z = self.mlp(z.t()) # 相似度分数？？
 
         return z, label, label_exp
-
-
-
-
 
 
 
@@ -162,7 +165,6 @@ class matching(nn.Module):
         return match
 
 
-
 # 融合操作：输出融合特征
 class MLP(nn.Module):
     def __init__(self, match_size):
@@ -197,8 +199,137 @@ class MLP(nn.Module):
         return z
 
 
-args = parameter_parser()
+parser = argparse.ArgumentParser(
+    description="train", formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
+# parser.add_argument("--name", type=str, default="Citeseer")
+parser.add_argument("--max_epoch", type=int, default=100)
+parser.add_argument("--lr", type=float, default=0.001)
+#parser.add_argument("--n_clusters", default=6, type=int)
+parser.add_argument("--hidden_dim", default=1000, type=int)
+parser.add_argument("--output_dim", default=250, type=int)
+parser.add_argument("--match_size", default=250, type=int)  #######？
+parser.add_argument("--weight_decay", type=int, default=1e-4)
+#parser.add_argument("--alpha", type=float, default=0.2, help="Alpha for the leaky_relu.")
+args = parser.parse_args()
+args.cuda = torch.cuda.is_available()
+print("use cuda: {}".format(args.cuda))
+device = torch.device("cuda" if args.cuda else "cpu")
 
-model = MFC_RMF(args.input_dim, args.hidden_dim, args.output_dim, args)
-print(summary(model))
+adj_ori = np.load('./origin_data/adj_ori.npz', allow_pickle=True)
+fea_ori = np.load('./origin_data/fea_ori.npz', allow_pickle=True)
+perturbed_graph = np.load('./perturbation_data/perturbed_graph.npz')
+perturbed_label = np.load('./perturbation_data/perturbed_label.npz')
+perturbed_fea = np.load('./perturbation_data/perturbed_fea.npz')
+print('perturbed_graph',perturbed_graph.files,perturbed_graph['arr_0'].shape)
+# print('perturbed_label',perturbed_label.files,perturbed_label['arr_0'].shape)
+# print('perturbed_fea',perturbed_fea.files,perturbed_fea['arr_0'].shape)
+perturbed_a = perturbed_graph['arr_0']
+perturbed_l = perturbed_label['arr_0']
+perturbed_fe = perturbed_fea['arr_0']
+# print('adj_ori:\n',adj_ori.files,'\n',adj_ori['arr_0'])
+# print(type(adj_ori['arr_0']),adj_ori['arr_0'].shape,adj_ori['arr_0'])
+
+G_o = nx.Graph(adj_ori['arr_0'])
+# edge_index_s = list(G_o.edges)
+# print('edge_index_s:\n',edge_index_s)
+# print('edge_index_s_type:\n',type(edge_index_s))
+
+
+class GraphPair:
+    def __init__(self, edge_index_s, edge_index_t, x_s, x_t, label):  # edge_index_s, edge_index_t,
+        # self.adj = adj
+        # self.adj_p = adj_p
+        self.edge_index_s = edge_index_s
+        self.edge_index_t = edge_index_t
+        self.x_s = x_s
+        self.x_t = x_t
+        self.label = label
+
+    def save(self, GraphPair_file):
+        """
+        Save the graph pair to a file using PyTorch's serialization.
+        """
+        torch.save({
+            # 'adj': self.adj,
+            # 'adj_p': self.adj_p,
+            'edge_index_s': self.edge_index_s,
+            'edge_index_t': self.edge_index_t,
+            'x_s': self.x_s,
+            'x_t': self.x_t,
+            'label': self.label,
+        }, GraphPair_file)
+
+    @staticmethod
+    def load(GraphPair_file):
+        """
+        Load a graph pair from a file.
+        """
+        loaded_data = torch.load(GraphPair_file)
+        return GraphPair(
+            # adj=loaded_data['adj'],
+            # adj_p=loaded_data['adj_p'],
+            edge_index_s=loaded_data['edge_index_s'],
+            edge_index_t=loaded_data['edge_index_t'],
+            x_s = loaded_data['x_s'],
+            x_t = loaded_data['x_t'],
+            label = loaded_data['label']
+        )
+
+
+for i in range(perturbed_a.shape[0]):
+    print('perturbed_',i)
+    perturbed_graph_a = perturbed_a[i]
+    perturbed_graph_l = perturbed_l[i]
+    perturbed_f = perturbed_fe[i]
+    perturbed_graph = nx.Graph(perturbed_graph_a)
+    ## dge_index_t = list(perturbed_graph.edges)
+
+    # 转换成 PyTorch 张量
+    adj_tensor = torch.tensor(adj_ori['arr_0'], dtype=torch.int64)
+    adj_p_tensor = torch.tensor(perturbed_a, dtype=torch.int64)
+    x_s_tensor = torch.tensor(fea_ori['arr_0'], dtype=torch.float32)
+    x_t_tensor = torch.tensor(perturbed_fe, dtype=torch.float32)
+    #edge_index_s_tensor = torch.tensor(edge_index_s, dtype=torch.int64)
+    #edge_index_t_tensor = torch.tensor(edge_index_t, dtype=torch.int64)
+    label_tensor = torch.tensor(perturbed_l, dtype=torch.int64)
+    graph_pair = GraphPair(adj_tensor, adj_p_tensor, x_s_tensor, x_t_tensor, label_tensor) #, edge_index_s_tensor, edge_index_t_tensor)
+
+    args.input_dim = perturbed_f.shape[1]
+    # print(args.input_dim)
+    print(args)
+    model = MFC_RMF(args.input_dim, args.hidden_dim, args.output_dim, args)
+    print(summary(model))
+
+    # ground-truth
+    graph_edit_distance = nx.graph_edit_distance(G_o,perturbed_graph)
+    z_targe = math.exp(-graph_edit_distance / ((G_o.number_of_nodes() + perturbed_graph.number_of_nodes()) / 2))
+
+    optimizer = Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+    mse_loss = nn.MSELoss()
+    loss_history = []
+    for epoch in range(args.max_epoch):
+        model.train()
+        z, label, label_exp = model.forward(graph_pair)
+        loss = mse_loss(z, z_targe)
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        loss_history.append(loss.item())
+        print('epoch:{}, loss:{}'.format(epoch, loss))
+    fig = plt.figure()
+    ax1 = fig.add_subplot(111)
+    ax1.plot(range(len(loss_history)), loss_history)
+    plt.ylabel('Loss')
+    plt.xlabel('Epoch : {}'.format(args.max_epoch))
+    plt.title('Training Loss')
+    plt.text(0, loss_history[0], loss_history[0])
+    plt.text(args.max_epoch, loss_history[(args.max_epoch - 1)], loss_history[(args.max_epoch - 1)],
+             horizontalalignment='left')
+    plt.savefig('./training_loss/Training_Loss_epoch_GraphPair' + str(i)+ str(args.max_epoch) + '.svg', format='svg')
+    plt.show()
+
+
+
+
 

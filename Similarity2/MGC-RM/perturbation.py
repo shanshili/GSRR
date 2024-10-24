@@ -9,6 +9,10 @@ from dataprocess2 import get_data2
 
 import os
 
+import time
+
+time_start=time.time()
+
 """
 # 读取原始特征
 fea_ori = pd.read_csv('CIMIS/raw_data/dataset.csv').values
@@ -108,7 +112,9 @@ print("perturbed_graph_fea",len(perturbed_graph_fea))
 np.savez('./perturbation_data/perturbed_graph.npz', perturbed_adj_set)  # 里面是一个(n, 450, 450)的张量：450个邻接矩阵
 np.savez('./perturbation_data/perturbed_label.npz', perturbed_graph_label)  # 450
 np.savez('./perturbation_data/perturbed_fea.npz', perturbed_graph_fea)  # 450
-np.savetxt("./perturbation_data/perturbed_graph.csv", perturbed_adj_set, delimiter=',')
-np.savetxt('./perturbation_data/perturbed_label.csv', perturbed_graph_label,delimiter=',')  # 450
-np.savetxt('./perturbation_data/perturbed_fea.csv', perturbed_graph_fea, delimiter=',')  # 450
-# '''
+# np.savetxt("./perturbation_data/perturbed_graph.csv", perturbed_adj_set, delimiter=',')
+# np.savetxt('./perturbation_data/perturbed_label.csv', perturbed_graph_label,delimiter=',')  # 450
+# np.savetxt('./perturbation_data/perturbed_fea.csv', perturbed_graph_fea, delimiter=',')  # 450
+# # '''
+time_end=time.time()
+print('time cost',time_end-time_start,'s')

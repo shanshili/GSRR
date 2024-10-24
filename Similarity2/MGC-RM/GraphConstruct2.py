@@ -52,6 +52,7 @@ def location_graph(location):
     A = A + A.T.multiply(A.T > A) - A.multiply(A.T > A)   # 双向图，但是在这里不影响
     # print("A2:",A)
     location_g = nx.from_numpy_array(A)
+    A = nx.to_pandas_adjacency(location_g)
     nx.draw(location_g,pos = location,with_labels=True, alpha = 0.4, node_size=10, font_size = 3)
     # nx.draw_networkx_nodes(location_g, pos=location, nodelist = [0,1,2], node_size = 20, node_color="r")
     plt.title('Knn_4_graph')

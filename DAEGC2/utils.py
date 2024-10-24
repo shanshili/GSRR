@@ -6,10 +6,10 @@ from sklearn.preprocessing import normalize
 from torch_geometric.datasets import Planetoid
 
 
-# def get_dataset(dataset):
-#     datasets = Planetoid('./dataset', dataset)
-#     return datasets
-#
+def get_dataset(dataset):
+    datasets = Planetoid('./dataset', dataset)
+    return datasets
+
 def data_preprocessing(A,location_g,x):  # 生成邻接矩阵？？对邻接矩阵归一化
     # A = np.array(nx.adjacency_matrix(location_g).todense())
     # print(A,A.data,A.shape)

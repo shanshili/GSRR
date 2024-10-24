@@ -46,8 +46,6 @@ def natural_connectivity(G):
     n_c = np.log(adj_spec_exp_sum / adj_spec.shape)
     return n_c
 
-
-
 def get_h_hop_neighbors(G, node, hop=1):
     '''
 
@@ -73,7 +71,6 @@ def communication_energy_loss(G, node, neighbors, E_0, E_elec=600, alpha=3, beta
         dis = nx.shortest_path_length(G, node, i)
         Energy -= (2 * E_elec + beta * dis ** alpha) * 1e-9 * bit
     return Energy
-
 
 def network_life(pos, selected_nodes, k):
     pos_selected = find_value_according_index_list(pos, selected_nodes)
@@ -105,9 +102,6 @@ def network_life(pos, selected_nodes, k):
             break
     # energy_collect = np.array(energy_collect)
     return i + 1, res_energy_avg
-
-
-
 
 
 def f_distance(pos_i, pos_j):
@@ -143,9 +137,6 @@ def f_distance(pos_i, pos_j):
 
     return position_fi, position_fj, center_f, f_d
 
-
-
-
 def g_distance(pos_i, pos_j):
 
 
@@ -179,7 +170,6 @@ def g_distance(pos_i, pos_j):
 
     return position_gi, position_gj, center_g, g_d
 
-
 def find_value_according_index_list(aim_list, index_list):
     i = 0
     reslut_list = []
@@ -187,14 +177,6 @@ def find_value_according_index_list(aim_list, index_list):
         reslut_list.append(aim_list[index_list[i]])
         i = i + 1
     return reslut_list
-
-
-
-
-
-
-
-
 
 def f_distance_2(lon, lat, i, j):
     # lon: 横坐标列表
@@ -233,10 +215,6 @@ def f_distance_2(lon, lat, i, j):
 
     return lon_fi, lat_fi, lon_fj, lat_fj, f_d
 
-
-
-
-
 def g_distance_2(lon, lat, i, j):
     # lon: 横坐标列表
     # lat: 纵坐标列表
@@ -269,5 +247,4 @@ def g_distance_2(lon, lat, i, j):
     g_d = math.sqrt((lon_gi - lon_gj) ** 2 + (lat_gi - lat_gj) ** 2)
 
     return lon_gi, lat_gi, lon_gj, lat_gj, g_d
-
 
