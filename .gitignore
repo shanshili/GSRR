@@ -6,10 +6,8 @@ GraphNeuralNetwork-Resilience-ComplexNetworks/**
 venv/**
 Modules/**
 data/**
-*.SVG
-*.png
 DAEGC/__pychche__/**
 dataset/**
-*.npz
 *.memmap
+*.npz
 
