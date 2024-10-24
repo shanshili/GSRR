@@ -257,7 +257,7 @@ parser = argparse.ArgumentParser(
     description="train", formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
 # parser.add_argument("--name", type=str, default="Citeseer")
-parser.add_argument("--max_epoch", type=int, default=50)
+parser.add_argument("--max_epoch", type=int, default=60)
 parser.add_argument("--lr", type=float, default=0.00001)
 #parser.add_argument("--n_clusters", default=6, type=int)
 parser.add_argument("--hidden_dim", default=1000, type=int)
@@ -292,7 +292,7 @@ edge_index_s = np.array(list(G_o.edges)).T
 # print('edge_index_s_type:\n',type(edge_index_s))
 # print('edge_index_s_type:\n',edge_index_s.T.shape)
 
-i = 3
+i = 50
 # for i in range(perturbed_a.shape[0]):
 print('======= perturbed：',i,'========================')
 perturbed_graph_a = perturbed_a[i]
@@ -334,7 +334,7 @@ loss_history = []
 for epoch in range(args.max_epoch):
     model.train()
     z, label, label_exp = model.forward(graph_pair)
-    #print(type(z),z.shape,z)
+    print(z[0])
     #print(type(z_targe), z_targe.shape, z_targe)
     loss = mse_loss(z[0], z_targe)
     optimizer.zero_grad()
@@ -353,6 +353,7 @@ plt.title('GraphPair_'+str(i)+ ' Training Loss: epoch' + str(args.max_epoch)+' l
 plt.text(0, loss_history[0], loss_history[0])
 plt.text(args.max_epoch, loss_history[(args.max_epoch - 1)], loss_history[(args.max_epoch - 1)],
          horizontalalignment='left')
+
 timestamp = time.time()
 localtime = time.localtime(timestamp)
 formatted_time = time.strftime('%Y%m%d_%H%M%S',localtime)
@@ -360,7 +361,7 @@ formatted_time = time.strftime('%Y%m%d_%H%M%S',localtime)
 plt.savefig('./training_loss/GraphPair_'+str(i)+ '_Training_Loss_epoch_' + str(args.max_epoch) + '_lr_'+ str(args.lr)+'_'+str(formatted_time)+'.svg', format='svg')
 plt.show()
 
-torch.save(model, './model_save/model'+str(formatted_time)+'.pth')
+torch.save(model, './model_save/model_'+str(formatted_time)+'.pth')
 
 model.eval()
 z_p = []
@@ -386,8 +387,10 @@ for i in range(perturbed_a.shape[0]):
     graph_pair = GraphPair(edge_index_s_tensor, edge_index_t_tensor, x_s_tensor, x_t_tensor, label_tensor)
 
     with torch.no_grad():
-         z_prediction = model(graph_pair)
-    z_p.append(z_prediction)
+         z_prediction, label, label_exp = model.forward(graph_pair)
+    z_p.append(z_prediction[0])
+
+print(z_p)
 
 
 
