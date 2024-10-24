@@ -124,13 +124,13 @@ perturbed_adj_set, perturbed_graph_label, perturbed_graph_fea = Construct_pertur
 
 
 # 保存到文件
-np.savez('./origin_data/adj_ori.npz', adj_ori)
-np.savez('./origin_data/fea_ori.npz', fea_ori)
-np.savez('./origin_data/location.npz', location)
+np.savez('./origin_data/adj_ori'+'_node_'+str(node)+'_data_'+str(data_num)+'.npz', adj_ori)
+np.savez('./origin_data/fea_ori'+'_node_'+str(node)+'_data_'+str(data_num)+'.npz', fea_ori)
+np.savez('./origin_data/location'+'_node_'+str(node)+'_data_'+str(data_num)+'.npz', location)
 # np.savez('./perturbation_data/perturbed_edge_set.npz', perturbed_edge_set)  #
-np.savez('./perturbation_data/perturbed_graph.npz', perturbed_adj_set)  # 里面是一个(node, node, node)的张量：node个邻接矩阵
-np.savez('./perturbation_data/perturbed_label.npz', perturbed_graph_label)  # node
-np.savez('./perturbation_data/perturbed_fea.npz', perturbed_graph_fea)  # (node,node,data_num)
+np.savez('./perturbation_data/perturbed_graph'+'_node_'+str(node)+'_data_'+str(data_num)+'.npz', perturbed_adj_set)  # 里面是一个(node, node, node)的张量：node个邻接矩阵
+np.savez('./perturbation_data/perturbed_label'+'_node_'+str(node)+'_data_'+str(data_num)+'.npz', perturbed_graph_label)  # node
+np.savez('./perturbation_data/perturbed_fea'+'_node_'+str(node)+'_data_'+str(data_num)+'.npz', perturbed_graph_fea)  # (node,node,data_num)
 # np.savetxt("./perturbation_data/perturbed_graph.csv", perturbed_adj_set, delimiter=',')
 # np.savetxt('./perturbation_data/perturbed_label.csv', perturbed_graph_label,delimiter=',')
 # np.savetxt('./perturbation_data/perturbed_fea.csv', perturbed_graph_fea, delimiter=',')

@@ -256,8 +256,8 @@ parser = argparse.ArgumentParser(
     description="train", formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
 # parser.add_argument("--name", type=str, default="Citeseer")
-parser.add_argument("--max_epoch", type=int, default=20)
-parser.add_argument("--lr", type=float, default=0.0005)
+parser.add_argument("--max_epoch", type=int, default=50)
+parser.add_argument("--lr", type=float, default=0.00001)
 #parser.add_argument("--n_clusters", default=6, type=int)
 parser.add_argument("--hidden_dim", default=1000, type=int)
 parser.add_argument("--output_dim", default=250, type=int)
@@ -269,11 +269,13 @@ args.cuda = torch.cuda.is_available()
 print("use cuda: {}".format(args.cuda))
 device = torch.device("cuda" if args.cuda else "cpu")
 
-adj_ori = np.load('./origin_data/adj_ori.npz', allow_pickle=True)
-fea_ori = np.load('./origin_data/fea_ori.npz', allow_pickle=True)
-perturbed_graph = np.load('./perturbation_data/perturbed_graph.npz')
-perturbed_label = np.load('./perturbation_data/perturbed_label.npz')
-perturbed_fea = np.load('./perturbation_data/perturbed_fea.npz')
+node = 450
+data_num = 2000
+adj_ori = np.load('./origin_data/adj_ori_node'+'_node_'+str(node)+'_data_'+str(data_num)+'.npz', allow_pickle=True)
+fea_ori = np.load('./origin_data/fea_ori'+'_node_'+str(node)+'_data_'+str(data_num)+'.npz', allow_pickle=True)
+perturbed_graph = np.load('./perturbation_data/perturbed_graph'+'_node_'+str(node)+'_data_'+str(data_num)+'.npz')
+perturbed_label = np.load('./perturbation_data/perturbed_label'+'_node_'+str(node)+'_data_'+str(data_num)+'.npz')
+perturbed_fea = np.load('./perturbation_data/perturbed_fea'+'_node_'+str(node)+'_data_'+str(data_num)+'.npz')
 print('perturbed_graph',perturbed_graph.files,perturbed_graph['arr_0'].shape)
 # print('perturbed_label',perturbed_label.files,perturbed_label['arr_0'].shape)
 # print('perturbed_fea',perturbed_fea.files,perturbed_fea['arr_0'].shape)
@@ -291,7 +293,7 @@ edge_index_s = np.array(list(G_o.edges)).T
 
 
 for i in range(perturbed_a.shape[0]):
-    print('=======perturbed：',i,'========================')
+    print('======= perturbed：',i,'========================')
     perturbed_graph_a = perturbed_a[i]
     perturbed_graph_l = perturbed_l[i]
     perturbed_f = perturbed_fe[i]
@@ -338,16 +340,17 @@ for i in range(perturbed_a.shape[0]):
         optimizer.step()
         loss_history.append(loss.item())
         print('epoch:{}, loss:{}'.format(epoch, loss))
+
     fig = plt.figure()
     ax1 = fig.add_subplot(111)
     ax1.plot(range(len(loss_history)), loss_history)
     plt.ylabel('Loss')
     plt.xlabel('Epoch : {}'.format(args.max_epoch))
-    plt.title('Training Loss')
+    plt.title('GraphPair_'+str(i)+ ' Training Loss: epoch' + str(args.max_epoch)+' lr'+ str(args.lr))
     plt.text(0, loss_history[0], loss_history[0])
     plt.text(args.max_epoch, loss_history[(args.max_epoch - 1)], loss_history[(args.max_epoch - 1)],
              horizontalalignment='left')
-    plt.savefig('./training_loss/GraphPair_'+str(i)+ 'Training_Loss_epoch' + str(args.max_epoch) + '.svg', format='svg')
+    plt.savefig('./training_loss/GraphPair_'+str(i)+ '_Training_Loss_epoch_' + str(args.max_epoch) + '_lr_'+ str(args.lr)+'.svg', format='svg')
     plt.show()
 
 
