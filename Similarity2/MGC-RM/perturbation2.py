@@ -115,7 +115,7 @@ def Construct_perturbation_graph(G_0,fea_ori):
 
 dataset_in_project_dir = '/dataset/北京-天津气象2021'
 node = 754
-data_num = 4000
+data_num = 2000
 tem_data, data_location = Read_data_CSV(dataset_in_project_dir)
 fea_ori, location = memory_over(tem_data, data_location, node , data_num)
 G_0, adj_ori = Construct_base_graph(location)
