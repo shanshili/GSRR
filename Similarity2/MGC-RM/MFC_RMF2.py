@@ -364,7 +364,7 @@ formatted_time = time.strftime('%Y%m%d_%H%M%S',localtime)
 plt.savefig('./training_loss/GraphPair_'+str(i)+ '_n'+str(node)+'_d'+str(data_num)+'_Training_Loss_epoch_' + str(args.max_epoch) + '_lr_'+ str(args.lr)+'_'+str(formatted_time)+'.svg', format='svg')
 plt.show()
 
-torch.save(model, './model_save/model_GP_'+str(i)+ '_n_'+str(node)+'_d_'+str(data_num)+'_e_' + str(args.max_epoch) + '_l_'+ str(args.lr)+str(formatted_time)+'.pth')
+torch.save(model, './model_save/model_GP_'+str(i)+ '_n_'+str(node)+'_d_'+str(data_num)+'_e_' + str(args.max_epoch) + '_l_'+ str(args.lr)+'_'+str(formatted_time)+'.pth')
 
 model.eval()
 z_p = []
