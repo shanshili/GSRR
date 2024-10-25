@@ -10,4 +10,5 @@ DAEGC/__pychche__/**
 dataset/**
 *.memmap
 *.npz
+*.pth
 

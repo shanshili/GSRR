@@ -1,6 +1,8 @@
 import numpy as np
 import torch
 import torch.nn as nn
+from numpy.random import randn
+
 from model import GAT
 # from param_parser import parameter_parser
 from torchinfo import summary
@@ -257,8 +259,8 @@ parser = argparse.ArgumentParser(
     description="train", formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
 # parser.add_argument("--name", type=str, default="Citeseer")
-parser.add_argument("--max_epoch", type=int, default=60)
-parser.add_argument("--lr", type=float, default=0.00001)
+parser.add_argument("--max_epoch", type=int, default=20)
+parser.add_argument("--lr", type=float, default=0.0005)
 #parser.add_argument("--n_clusters", default=6, type=int)
 parser.add_argument("--hidden_dim", default=1000, type=int)
 parser.add_argument("--output_dim", default=250, type=int)
@@ -292,7 +294,7 @@ edge_index_s = np.array(list(G_o.edges)).T
 # print('edge_index_s_type:\n',type(edge_index_s))
 # print('edge_index_s_type:\n',edge_index_s.T.shape)
 
-i = 50
+i = 234  # 图对编号
 # for i in range(perturbed_a.shape[0]):
 print('======= perturbed：',i,'========================')
 perturbed_graph_a = perturbed_a[i]
@@ -334,7 +336,7 @@ loss_history = []
 for epoch in range(args.max_epoch):
     model.train()
     z, label, label_exp = model.forward(graph_pair)
-    print(z[0])
+    print(z[0].item())
     #print(type(z_targe), z_targe.shape, z_targe)
     loss = mse_loss(z[0], z_targe)
     optimizer.zero_grad()
@@ -350,18 +352,19 @@ ax1.plot(range(len(loss_history)), loss_history)
 plt.ylabel('Loss')
 plt.xlabel('Epoch : {}'.format(args.max_epoch))
 plt.title('GraphPair_'+str(i)+ ' Training Loss: epoch' + str(args.max_epoch)+' lr'+ str(args.lr))
-plt.text(0, loss_history[0], loss_history[0])
-plt.text(args.max_epoch, loss_history[(args.max_epoch - 1)], loss_history[(args.max_epoch - 1)],
+plt.text(0, loss_history[0], str(format(loss_history[0],'.8f')))
+print(format(loss_history[(args.max_epoch - 1)],'.15f'))
+plt.text(round(args.max_epoch/10*9) , loss_history[(args.max_epoch - 1)], str(format(loss_history[(args.max_epoch - 1)],'.10f')),
          horizontalalignment='left')
 
 timestamp = time.time()
 localtime = time.localtime(timestamp)
 formatted_time = time.strftime('%Y%m%d_%H%M%S',localtime)
 
-plt.savefig('./training_loss/GraphPair_'+str(i)+ '_Training_Loss_epoch_' + str(args.max_epoch) + '_lr_'+ str(args.lr)+'_'+str(formatted_time)+'.svg', format='svg')
+plt.savefig('./training_loss/GraphPair_'+str(i)+ '_n'+str(node)+'_d'+str(data_num)+'_Training_Loss_epoch_' + str(args.max_epoch) + '_lr_'+ str(args.lr)+'_'+str(formatted_time)+'.svg', format='svg')
 plt.show()
 
-torch.save(model, './model_save/model_'+str(formatted_time)+'.pth')
+torch.save(model, './model_save/model_GP_'+str(i)+ '_n_'+str(node)+'_d_'+str(data_num)+'_e_' + str(args.max_epoch) + '_l_'+ str(args.lr)+str(formatted_time)+'.pth')
 
 model.eval()
 z_p = []
@@ -386,11 +389,38 @@ for i in range(perturbed_a.shape[0]):
     ## graph_pair = GraphPair(edge_index_s, edge_index_t, fea_ori['arr_0'], perturbed_fe, perturbed_l) #, edge_index_s_tensor, edge_index_t_tensor)
     graph_pair = GraphPair(edge_index_s_tensor, edge_index_t_tensor, x_s_tensor, x_t_tensor, label_tensor)
 
+    # ground-truth
+    graph_edit_distance = nx.graph_edit_distance(G_o, perturbed_graph)
+    similarity = math.exp(-graph_edit_distance / ((G_o.number_of_nodes() + perturbed_graph.number_of_nodes()) / 2))
+    z_targe = torch.Tensor([similarity])  # 创建一个新对象（如张量）时，提供的数据应该是一个序列（sequence）
+
     with torch.no_grad():
-         z_prediction, label, label_exp = model.forward(graph_pair)
-    z_p.append(z_prediction[0])
+         z_prediction, label, label_exp = model(graph_pair)
+         loss = mse_loss(z_prediction[0], z_targe)
+         loss_history.append(loss.item())
+
+    fig = plt.figure()
+    ax1 = fig.add_subplot(111)
+    ax1.plot(range(len(loss_history)), loss_history)
+    plt.ylabel('Loss')
+    plt.xlabel('Epoch : {}'.format(args.max_epoch))
+    plt.title('GraphPair_' + str(i) + ' Loss: epoch' + str(args.max_epoch) + ' lr' + str(args.lr))
+    plt.text(0, loss_history[0], str(format(loss_history[0], '.8f')))
+    print(format(loss_history[(args.max_epoch - 1)], '.15f'))
+    plt.text(round(args.max_epoch / 10 * 9), loss_history[(args.max_epoch - 1)],
+             str(format(loss_history[(args.max_epoch - 1)], '.10f')),
+             horizontalalignment='left')
+
+    plt.savefig(
+        './prediction_loss/GraphPair_' + str(i) + '_n' + str(node) + '_d' + str(data_num) + '_Training_Loss_epoch_' + str(
+            args.max_epoch) + '_lr_' + str(args.lr) + '_' + str(formatted_time) + '.svg', format='svg')
+    plt.show()
+
+    z_p.append(z_prediction[0].item())
 
 print(z_p)
+# print(type(z_p))
+np.savetxt('./similarity score/z'+'_node_'+str(node)+'_data_'+str(data_num)+'model_'+str(formatted_time)+'.txt', z_p)
 
 
 
