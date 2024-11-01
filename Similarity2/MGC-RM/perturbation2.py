@@ -122,7 +122,9 @@ G_0, adj_ori = Construct_base_graph(location)
 perturbed_adj_set, perturbed_graph_label, perturbed_graph_fea = Construct_perturbation_graph(G_0,fea_ori)
 
 
-
+'''
+tem data as feature
+'''
 # 保存到文件
 np.savez('./origin_data/adj_ori'+'_node_'+str(node)+'_data_'+str(data_num)+'.npz', adj_ori)
 np.savez('./origin_data/fea_ori'+'_node_'+str(node)+'_data_'+str(data_num)+'.npz', fea_ori)

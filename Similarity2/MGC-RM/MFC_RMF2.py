@@ -140,8 +140,6 @@ class MFC_RMF(nn.Module):
         return z, label, label_exp
 
 
-
-
 # 全局读出操作：输出全局特征
 class readout(nn.Module):
     def __init__(self, output_size):
@@ -272,6 +270,11 @@ args.cuda = torch.cuda.is_available()
 print("use cuda: {}".format(args.cuda))
 device = torch.device("cuda" if args.cuda else "cpu")
 
+
+'''
+setting processing data size
+data_num: number of feature
+'''
 node = 754
 data_num = 2000
 adj_ori = np.load('./origin_data/adj_ori'+'_node_'+str(node)+'_data_'+str(data_num)+'.npz', allow_pickle=True)
@@ -294,7 +297,12 @@ edge_index_s = np.array(list(G_o.edges)).T
 # print('edge_index_s_type:\n',type(edge_index_s))
 # print('edge_index_s_type:\n',edge_index_s.T.shape)
 
-i = 234  # 图对编号
+
+'''
+setting processing graph pair number
+i range in 0-(node-1)
+'''
+i = 1  # 图对编号
 # for i in range(perturbed_a.shape[0]):
 print('======= perturbed：',i,'========================')
 perturbed_graph_a = perturbed_a[i]
@@ -318,6 +326,7 @@ graph_pair = GraphPair(edge_index_s_tensor, edge_index_t_tensor, x_s_tensor, x_t
 
 
 
+# model init
 args.input_dim = perturbed_f.shape[1]
 print('input_dim: ',args.input_dim)
 print('edge_index_s_tensor: ',edge_index_s_tensor.shape)
@@ -332,6 +341,8 @@ similarity = math.exp(-graph_edit_distance / ((G_o.number_of_nodes() + perturbed
 z_targe = torch.Tensor([similarity]) # 创建一个新对象（如张量）时，提供的数据应该是一个序列（sequence）
 
 
+
+# model train
 optimizer = Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
 mse_loss = nn.MSELoss()
 loss_history = []
@@ -348,6 +359,8 @@ for epoch in range(args.max_epoch):
     print('epoch:{}, loss:{}'.format(epoch, loss))
 
 
+
+# loss display
 fig = plt.figure()
 ax1 = fig.add_subplot(111)
 ax1.plot(range(len(loss_history)), loss_history)
@@ -359,15 +372,20 @@ print(format(loss_history[(args.max_epoch - 1)],'.15f'))
 plt.text(round(args.max_epoch/10*9) , loss_history[(args.max_epoch - 1)], str(format(loss_history[(args.max_epoch - 1)],'.10f')),
          horizontalalignment='left')
 
+
+# time stamp
 timestamp = time.time()
 localtime = time.localtime(timestamp)
 formatted_time = time.strftime('%Y%m%d_%H%M%S',localtime)
 
+# Save
 plt.savefig('./training_loss/GraphPair_'+str(i)+ '_n'+str(node)+'_d'+str(data_num)+'_Training_Loss_epoch_' + str(args.max_epoch) + '_lr_'+ str(args.lr)+'_'+str(formatted_time)+'.svg', format='svg')
 plt.show()
-
 torch.save(model, './model_save/model_GP_'+str(i)+ '_n_'+str(node)+'_d_'+str(data_num)+'_e_' + str(args.max_epoch) + '_l_'+ str(args.lr)+'_'+str(formatted_time)+'.pth')
 
+
+
+# model reload
 model.eval()
 z_p = []
 for i in range(perturbed_a.shape[0]):
@@ -397,7 +415,7 @@ for i in range(perturbed_a.shape[0]):
     z_targe = torch.Tensor([similarity])  # 创建一个新对象（如张量）时，提供的数据应该是一个序列（sequence）
 
     with torch.no_grad():
-         z_prediction, label, label_exp = model(graph_pair)
+         z_prediction, label, label_exp = model(graph_pair)  ###
          loss = mse_loss(z_prediction[0], z_targe)
          loss_history.append(loss.item())
 
@@ -413,8 +431,7 @@ for i in range(perturbed_a.shape[0]):
              str(format(loss_history[(args.max_epoch - 1)], '.10f')),
              horizontalalignment='left')
 
-    plt.savefig(
-        './prediction_loss/GraphPair_' + str(i) + '_n' + str(node) + '_d' + str(data_num) + '_Training_Loss_epoch_' + str(
+    plt.savefig('./prediction_loss/GraphPair_' + str(i) + '_n' + str(node) + '_d' + str(data_num) + '_Training_Loss_epoch_' + str(
             args.max_epoch) + '_lr_' + str(args.lr) + '_' + str(formatted_time) + '.svg', format='svg')
     plt.show()
 
