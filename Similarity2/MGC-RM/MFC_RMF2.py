@@ -390,7 +390,7 @@ model.eval()
 z_p = []
 loss_history2 = []
 for i in range(perturbed_a.shape[0]):
-    print('======= perturbed：', i, '========================')
+    print('GP：', i, '===============================')
     perturbed_graph_a2 = perturbed_a[i]
     # perturbed_graph_l2 = perturbed_l[i]
     perturbed_f2 = perturbed_fe[i]
@@ -420,7 +420,13 @@ for i in range(perturbed_a.shape[0]):
          loss2 = mse_loss(z_prediction[0], z_targe2)
          loss_history2.append(loss2.item())
          z_p.append(z_prediction[0].item())
-         print('GP '+ str(i) + ' loss:'+ str(loss2.item()))
+         print(' loss: '+ str(loss2.item()))
+         print(' score: ' + str(z_prediction[0].item()))
+
+# print(z_p)
+# print(type(z_p))
+np.savetxt('./similarity score/z'+'_node_'+str(node)+'_data_'+str(data_num)+'model_'+str(formatted_time)+'.txt', z_p)
+
 
 fig = plt.figure()
 ax1 = fig.add_subplot(111)
@@ -439,9 +445,6 @@ plt.show()
 
 
 
-# print(z_p)
-# print(type(z_p))
-np.savetxt('./similarity score/z'+'_node_'+str(node)+'_data_'+str(data_num)+'model_'+str(formatted_time)+'.txt', z_p)
 
 
 
