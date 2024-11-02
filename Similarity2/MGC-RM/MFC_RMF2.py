@@ -302,7 +302,7 @@ edge_index_s = np.array(list(G_o.edges)).T
 setting processing graph pair number
 i range in 0-(node-1)
 '''
-j = 310  # 图对编号
+j = 159  # 图对编号
 # for i in range(perturbed_a.shape[0]):
 print('======= perturbed：',j,'========================')
 perturbed_graph_a = perturbed_a[j]
