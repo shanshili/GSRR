@@ -302,12 +302,12 @@ edge_index_s = np.array(list(G_o.edges)).T
 setting processing graph pair number
 i range in 0-(node-1)
 '''
-i = 310  # 图对编号
+j = 310  # 图对编号
 # for i in range(perturbed_a.shape[0]):
-print('======= perturbed：',i,'========================')
-perturbed_graph_a = perturbed_a[i]
+print('======= perturbed：',j,'========================')
+perturbed_graph_a = perturbed_a[j]
 # perturbed_graph_l = perturbed_l[i]
-perturbed_f = perturbed_fe[i]
+perturbed_f = perturbed_fe[j]
 perturbed_graph = nx.Graph(perturbed_graph_a)
 edge_index_t = np.array(list(perturbed_graph.edges)).T
 
@@ -366,7 +366,7 @@ ax1 = fig.add_subplot(111)
 ax1.plot(range(len(loss_history)), loss_history)
 plt.ylabel('Loss')
 plt.xlabel('Epoch : {}'.format(args.max_epoch))
-plt.title('GraphPair_'+str(i)+ ' Training Loss: epoch' + str(args.max_epoch)+' lr'+ str(args.lr))
+plt.title('GraphPair_'+str(j)+ ' Training Loss: epoch' + str(args.max_epoch)+' lr'+ str(args.lr))
 plt.text(0, loss_history[0], str(format(loss_history[0],'.8f')))
 print(format(loss_history[(args.max_epoch - 1)],'.15f'))
 plt.text(round(args.max_epoch/10*9) , loss_history[(args.max_epoch - 1)], str(format(loss_history[(args.max_epoch - 1)],'.10f')),
@@ -379,9 +379,9 @@ localtime = time.localtime(timestamp)
 formatted_time = time.strftime('%Y%m%d_%H%M%S',localtime)
 
 # Save
-plt.savefig('./training_loss/GraphPair_'+str(i)+ '_n'+str(node)+'_d'+str(data_num)+'_Training_Loss_epoch_' + str(args.max_epoch) + '_lr_'+ str(args.lr)+'_'+str(formatted_time)+'.svg', format='svg')
+plt.savefig('./training_loss/GraphPair_'+str(j)+ '_n'+str(node)+'_d'+str(data_num)+'_Training_Loss_epoch_' + str(args.max_epoch) + '_lr_'+ str(args.lr)+'_'+str(formatted_time)+'.svg', format='svg')
 plt.show()
-torch.save(model, './model_save/model_GP_'+str(i)+ '_n_'+str(node)+'_d_'+str(data_num)+'_e_' + str(args.max_epoch) + '_l_'+ str(args.lr)+'_'+str(formatted_time)+'.pth')
+torch.save(model, './model_save/model_GP_'+str(j)+ '_n_'+str(node)+'_d_'+str(data_num)+'_e_' + str(args.max_epoch) + '_l_'+ str(args.lr)+'_'+str(formatted_time)+'.pth')
 
 
 
@@ -433,13 +433,13 @@ ax1 = fig.add_subplot(111)
 ax1.plot(range(len(loss_history2)), loss_history2)
 plt.ylabel('Loss')
 plt.xlabel('GraphPair_ : {}'.format(perturbed_a.shape[0]))
-plt.title('Similarity Loss_' + 'GP_'+str(i)+ '_n_'+str(node)+'_d_'+str(data_num)+'_e_' + str(args.max_epoch) + '_l_'+ str(args.lr))
+plt.title('Similarity Loss_' + 'GP_'+str(j)+ '_n_'+str(node)+'_d_'+str(data_num)+'_e_' + str(args.max_epoch) + '_l_'+ str(args.lr))
 #plt.text(0, loss_history2[0], str(format(loss_history2[0], '.8f')))
 #print(format(loss_history2[(args.max_epoch - 1)], '.15f'))
 # plt.text(round(args.max_epoch / 10 * 9), loss_history2[(args.max_epoch - 1)],
          #str(format(loss_history2[(args.max_epoch - 1)], '.10f')),
         # horizontalalignment='left')
-plt.savefig('./prediction_loss/GraphPair_' + str(i) + '_n' + str(node) + '_d' + str(data_num) + '_Training_Loss_epoch_' + str(
+plt.savefig('./prediction_loss/GraphPair_' + str(j) + '_n' + str(node) + '_d' + str(data_num) + '_Training_Loss_epoch_' + str(
         args.max_epoch) + '_lr_' + str(args.lr) + '_' + str(formatted_time) + '.svg', format='svg')
 plt.show()
 
