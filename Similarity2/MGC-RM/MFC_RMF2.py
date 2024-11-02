@@ -426,7 +426,8 @@ for i in range(perturbed_a.shape[0]):
 # print(z_p)
 # print(type(z_p))
 np.savetxt('./similarity score/z'+ 'GP_'+str(j)+'_node_'+str(node)+'_data_'+str(data_num)+'model_'+str(formatted_time)+'.txt', z_p)
-
+np.savetxt('./prediction_loss/GraphPair_' + str(j) + '_n' + str(node) + '_d' + str(data_num) + '_Prediction_Loss_epoch_' + str(
+        args.max_epoch) + '_lr_' + str(args.lr) + '_' + str(formatted_time) +'.txt', loss_history2)
 
 fig = plt.figure()
 ax1 = fig.add_subplot(111)
