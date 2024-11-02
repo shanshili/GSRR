@@ -425,7 +425,7 @@ for i in range(perturbed_a.shape[0]):
 
 # print(z_p)
 # print(type(z_p))
-np.savetxt('./similarity score/z'+'_node_'+str(node)+'_data_'+str(data_num)+'model_'+str(formatted_time)+'.txt', z_p)
+np.savetxt('./similarity score/z'+ 'GP_'+str(j)+'_node_'+str(node)+'_data_'+str(data_num)+'model_'+str(formatted_time)+'.txt', z_p)
 
 
 fig = plt.figure()
@@ -433,13 +433,13 @@ ax1 = fig.add_subplot(111)
 ax1.plot(range(len(loss_history2)), loss_history2)
 plt.ylabel('Loss')
 plt.xlabel('GraphPair_ : {}'.format(perturbed_a.shape[0]))
-plt.title('Similarity Loss_' + 'GP_'+str(j)+ '_n_'+str(node)+'_d_'+str(data_num)+'_e_' + str(args.max_epoch) + '_l_'+ str(args.lr))
+plt.title('Prediction Loss_' + 'GP_'+str(j)+ '_n_'+str(node)+'_d_'+str(data_num)+'_e_' + str(args.max_epoch) + '_l_'+ str(args.lr))
 #plt.text(0, loss_history2[0], str(format(loss_history2[0], '.8f')))
 #print(format(loss_history2[(args.max_epoch - 1)], '.15f'))
 # plt.text(round(args.max_epoch / 10 * 9), loss_history2[(args.max_epoch - 1)],
          #str(format(loss_history2[(args.max_epoch - 1)], '.10f')),
         # horizontalalignment='left')
-plt.savefig('./prediction_loss/GraphPair_' + str(j) + '_n' + str(node) + '_d' + str(data_num) + '_Training_Loss_epoch_' + str(
+plt.savefig('./prediction_loss/GraphPair_' + str(j) + '_n' + str(node) + '_d' + str(data_num) + '_Prediction_Loss_epoch_' + str(
         args.max_epoch) + '_lr_' + str(args.lr) + '_' + str(formatted_time) + '.svg', format='svg')
 plt.show()
 

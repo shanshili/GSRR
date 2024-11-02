@@ -19,7 +19,7 @@ Add the model overload module to generate the similarity score of the remaining 
 np.savetxt('./similarity score/z'+'_node_'+str(node)+'_data_'+str(data_num)+'model_'+str(formatted_time)+'.txt', z_p)
 ```
 
-## MFC_RMF3
+
 
 
 
