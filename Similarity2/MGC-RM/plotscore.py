@@ -23,10 +23,10 @@ score=[]
 gpn = 75
 error_point = 328
 # 标号为数组下标
-adjust =  1.463619555579498410e-04#75-329的数据  #1.949527258053421974e-05#159-328#    #1.664528177166357636e-04#310-21#
-# with open('similarity score\gp_159_z_node_450_data_2000model_20241102_165518.txt','r') as f:
+adjust =  1.463619555579498410e-04#75-329的数据 #1.949527258053421974e-05#159-328# #1.664528177166357636e-04#310-21#
+with open('similarity score\gp_159_z_node_450_data_2000model_20241102_165518.txt','r') as f:
 # with open('similarity score\gp_310_z_node_450_data_2000model_20241102_165317.txt','r') as f:
-with open('similarity score\zGP_75_node_450_data_2000model_20241102_211834.txt','r') as f:
+# with open('similarity score\zGP_75_node_450_data_2000model_20241102_211834.txt','r') as f:
 	for line in f:
 		score.append(float(list(line.strip('\n').split(','))[0]))
 
@@ -37,6 +37,6 @@ with open('similarity score\zGP_75_node_450_data_2000model_20241102_211834.txt',
 score_n = normalization(score,error_point,adjust)
 print(score_n)
 
-data_color_graph2(score_n,G_o,location,gpn)
+data_color_graph2(score_n,G_o,location,gpn,'rainbow',False)
 
 

@@ -4,6 +4,9 @@ from numpy.f2py.cb_rules import cb_map
 from sklearn.neighbors import NearestNeighbors
 import numpy as np
 import networkx as nx
+import matplotlib as mpl
+import matplotlib.cm as cm
+import matplotlib.colors as mcolors
 
 """
 BJ_position = pd.read_csv('../dataset/北京-天津气象数据集2022/北京-天津气象数据集2022/BJ_position.csv')
@@ -69,13 +72,15 @@ def data_color_graph(data,locationgraph,location,epoch_range):
     nx.draw(locationgraph, pos=location, with_labels=True,  alpha = 0.8, node_size=5,node_color= data, cmap = 'rainbow',font_size = 3)
     plt.savefig('node_quality_epoch'+str(epoch_range)+'.svg', format='svg')
 
-def data_color_graph2(score,locationgraph,location,Gpn):
+def data_color_graph2(score,locationgraph,location,Gpn,color,labels):
     #locationgraph = location_graph(location)
+    norm1 = mcolors.Normalize(vmin=np.min(score), vmax=np.max(score))
     plt.figure()
     plt.title('Graph Pair: '+str(Gpn))
-    nx.draw(locationgraph, pos=location, with_labels=True,  alpha = 0.8, node_size=5,node_color= score, cmap = 'rainbow',font_size = 0)
+    nx.draw(locationgraph, pos=location, with_labels=labels,  alpha = 0.8, node_size=8,node_color= score, cmap = color,width = 0.6,edge_color = '#BBD6D8',font_size = 0)
+    # plt.colorbar(cm.ScalarMappable(norm=norm1, cmap=color), ax = )
     plt.savefig('similarity score\Gp'+str(Gpn)+'.svg', format='svg')
-
+    # plt.show()
 
 """
 已知坐标数据 list , 是否是以list的坐标作为节点的标号
