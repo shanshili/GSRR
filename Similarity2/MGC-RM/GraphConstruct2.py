@@ -69,6 +69,13 @@ def data_color_graph(data,locationgraph,location,epoch_range):
     nx.draw(locationgraph, pos=location, with_labels=True,  alpha = 0.8, node_size=5,node_color= data, cmap = 'rainbow',font_size = 3)
     plt.savefig('node_quality_epoch'+str(epoch_range)+'.svg', format='svg')
 
+def data_color_graph2(score,locationgraph,location,Gpn):
+    #locationgraph = location_graph(location)
+    plt.figure()
+    plt.title('Graph Pair: '+str(Gpn))
+    nx.draw(locationgraph, pos=location, with_labels=True,  alpha = 0.8, node_size=5,node_color= score, cmap = 'rainbow',font_size = 0)
+    plt.savefig('similarity score\Gp'+str(Gpn)+'.svg', format='svg')
+
 
 """
 已知坐标数据 list , 是否是以list的坐标作为节点的标号

@@ -49,5 +49,12 @@ def get_data(path):
     df = pd.concat(dataset_list)
     return df
 
-
+"""
+normalization
+"""
+def normalization(data,error,adjust):
+    a = data[error] - adjust
+    data[error] = a
+    _range = np.max(data) - np.min(data)
+    return (data - np.min(data)) / _range
 
