@@ -14,7 +14,17 @@ import torch.nn.functional as F
 import matplotlib.pyplot as plt
 import math
 import time
+from matplotlib import rcParams
 
+# 全局修改字体
+config = {
+            "font.family": 'Times New Roman',
+            "font.size": 10.5,
+            # "mathtext.fontset": 'stix',#matplotlib渲染数学字体时使用的字体，和Times New Roman差别不大
+            # "font.serif": ['SimSun'],#宋体
+            'axes.unicode_minus': False # 处理负号，即-号
+         }
+rcParams.update(config)
 
 class MFC_RMF(nn.Module):
     def __init__(self, input_size, hidden_size, output_size, args):

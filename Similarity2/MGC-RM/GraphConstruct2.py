@@ -7,6 +7,17 @@ import networkx as nx
 import matplotlib as mpl
 import matplotlib.cm as cm
 import matplotlib.colors as mcolors
+from matplotlib import rcParams
+
+# 全局修改字体
+config = {
+            "font.family": 'Times New Roman',
+            "font.size": 10.5,
+            # "mathtext.fontset": 'stix',#matplotlib渲染数学字体时使用的字体，和Times New Roman差别不大
+            # "font.serif": ['SimSun'],#宋体
+            'axes.unicode_minus': False # 处理负号，即-号
+         }
+rcParams.update(config)
 
 """
 BJ_position = pd.read_csv('../dataset/北京-天津气象数据集2022/北京-天津气象数据集2022/BJ_position.csv')

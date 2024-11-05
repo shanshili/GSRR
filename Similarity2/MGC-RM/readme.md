@@ -33,3 +33,8 @@ Generate a perturbation graph
 
 packaged into a function
 
+
+
+## PageRank2
+
+weights PageRank

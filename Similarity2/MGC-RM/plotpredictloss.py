@@ -2,6 +2,17 @@ from GraphConstruct2 import data_color_graph2
 from dataprocess2 import normalization
 import numpy as np
 import networkx as nx
+from matplotlib import rcParams
+
+# 全局修改字体
+config = {
+            "font.family": 'Times New Roman',
+            "font.size": 10.5,
+            # "mathtext.fontset": 'stix',#matplotlib渲染数学字体时使用的字体，和Times New Roman差别不大
+            # "font.serif": ['SimSun'],#宋体
+            'axes.unicode_minus': False # 处理负号，即-号
+         }
+rcParams.update(config)
 
 node = 450
 data_num = 2000

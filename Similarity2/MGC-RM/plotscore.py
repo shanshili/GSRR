@@ -2,6 +2,17 @@ from GraphConstruct2 import data_color_graph2
 from dataprocess2 import normalization
 import numpy as np
 import networkx as nx
+from matplotlib import rcParams
+
+# 全局修改字体
+config = {
+            "font.family": 'Times New Roman',
+            "font.size": 10.5,
+            # "mathtext.fontset": 'stix',#matplotlib渲染数学字体时使用的字体，和Times New Roman差别不大
+            # "font.serif": ['SimSun'],#宋体
+            'axes.unicode_minus': False # 处理负号，即-号
+         }
+rcParams.update(config)
 
 node = 450
 data_num = 2000
@@ -20,13 +31,13 @@ location = location_file['arr_0']
 
 
 score=[]
-gpn = 75
+gpn = 755
 error_point = 328
 # 标号为数组下标
 adjust =  1.463619555579498410e-04#75-329的数据 #1.949527258053421974e-05#159-328# #1.664528177166357636e-04#310-21#
-with open('similarity score\gp_159_z_node_450_data_2000model_20241102_165518.txt','r') as f:
+# with open('similarity score\gp_159_z_node_450_data_2000model_20241102_165518.txt','r') as f:
 # with open('similarity score\gp_310_z_node_450_data_2000model_20241102_165317.txt','r') as f:
-# with open('similarity score\zGP_75_node_450_data_2000model_20241102_211834.txt','r') as f:
+with open('similarity score\zGP_75_node_450_data_2000model_20241102_211834.txt','r') as f:
 	for line in f:
 		score.append(float(list(line.strip('\n').split(','))[0]))
 
@@ -34,6 +45,7 @@ with open('similarity score\gp_159_z_node_450_data_2000model_20241102_165518.txt
 # print(type(score))
 # print(type(score[0]))
 # print(score[0])
+
 score_n = normalization(score,error_point,adjust)
 print(score_n)
 
