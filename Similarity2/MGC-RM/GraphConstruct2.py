@@ -61,17 +61,20 @@ def location_graph(location):
     # Epsilon neighbor
     #A = test.radius_neighbors_graph(radius = 0.08)
     # K neighbor
-    A = test.kneighbors_graph(n_neighbors= 4)
+    if len(location) < 5:
+        A = test.kneighbors_graph(n_neighbors=len(location)-1)
+    else:
+        A = test.kneighbors_graph(n_neighbors= 4)
     # print("A", A)
     A = A + A.T.multiply(A.T > A) - A.multiply(A.T > A)   # 双向图，但是在这里不影响
     # print("A2:",A)
     location_g = nx.from_numpy_array(A)
     A = nx.to_pandas_adjacency(location_g)
-    nx.draw(location_g,pos = location,with_labels=True, alpha = 0.4, node_size=10, font_size = 5)
+    # nx.draw(location_g,pos = location,with_labels=True, alpha = 0.4, node_size=10, font_size = 5)
     # nx.draw_networkx_nodes(location_g, pos=location, nodelist = [0,1,2], node_size = 20, node_color="r")
-    plt.title('Knn_4_graph')
-    plt.savefig('Knn_4_graph2'+'.svg', format='svg')
-    plt.show()
+    # plt.title('Knn_4_graph')
+    # plt.savefig('Knn_4_graph2'+'.svg', format='svg')
+    # plt.show()
     return location_g,A
 
 # G = location_graph(data_location[:,(0,1)])

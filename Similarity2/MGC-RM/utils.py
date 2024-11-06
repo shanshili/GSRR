@@ -5,17 +5,10 @@ import math
 from sklearn.neighbors import kneighbors_graph
 
 
+# update index_list
 
-def lb_to_xy(lat, lon):
-    r = 6371
-    theta = np.pi/2 - np.radians(lat)
-    phi = np.radians(lon)
-    x = r * np.sin(theta) * np.cos(phi)
-    y = r * np.sin(theta) * np.sin(phi)
-    coo = np.vstack([x, y])
-    return coo
 
-def find_value_according_index_list(aim_list, index_list):
+def find_value_according_index_list(aim_list, index_list):  # 索引转换 从排序索引找对应节点
     i = 0
     reslut_list = []
     while i < len(index_list):
@@ -45,6 +38,20 @@ def natural_connectivity(G):
     adj_spec_exp_sum = np.sum(adj_spec_exp)
     n_c = np.log(adj_spec_exp_sum / adj_spec.shape)
     return n_c
+
+
+def natural_connectivity2(G):
+    # 构建拉普拉斯矩阵
+    L = nx.laplacian_matrix(G).toarray()
+    # 计算拉普拉斯矩阵的特征值
+    eigenvalues = np.linalg.eigvalsh(L)
+    # 去掉一个零特征值
+    non_zero_eigenvalues = eigenvalues[eigenvalues > 1e-10]
+    # 计算自然连通性
+    n = G.number_of_nodes()
+    log_sum = np.sum(np.log(non_zero_eigenvalues))
+    natural_conn = log_sum / n
+    return natural_conn
 
 def get_h_hop_neighbors(G, node, hop=1):
     '''
@@ -170,13 +177,6 @@ def g_distance(pos_i, pos_j):
 
     return position_gi, position_gj, center_g, g_d
 
-def find_value_according_index_list(aim_list, index_list):
-    i = 0
-    reslut_list = []
-    while i < len(index_list):
-        reslut_list.append(aim_list[index_list[i]])
-        i = i + 1
-    return reslut_list
 
 def f_distance_2(lon, lat, i, j):
     # lon: 横坐标列表
@@ -248,3 +248,12 @@ def g_distance_2(lon, lat, i, j):
 
     return lon_gi, lat_gi, lon_gj, lat_gj, g_d
 
+
+def lb_to_xy(lat, lon):
+    r = 6371
+    theta = np.pi/2 - np.radians(lat)
+    phi = np.radians(lon)
+    x = r * np.sin(theta) * np.cos(phi)
+    y = r * np.sin(theta) * np.sin(phi)
+    coo = np.vstack([x, y])
+    return coo
