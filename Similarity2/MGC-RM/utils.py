@@ -49,6 +49,9 @@ def natural_connectivity2(G):
     non_zero_eigenvalues = eigenvalues[eigenvalues > 1e-10]
     # 计算自然连通性
     n = G.number_of_nodes()
+    # n = 1
+    # log_sum = np.log(np.prod(non_zero_eigenvalues))
+    # print(np.prod(non_zero_eigenvalues))
     log_sum = np.sum(np.log(non_zero_eigenvalues))
     natural_conn = log_sum / n
     return natural_conn

@@ -50,7 +50,7 @@ natural_conn = [None] * (int(len(node_list)) + 1)
 x = [None] * (int(len(node_list)) + 1)
 i = 0
 # print(len(node_list))
-for select_node in range(0,150,1):
+for select_node in range(1,150,1):
     # print(select_node+1)
     x[i] = select_node+1
     selected_node[i] = node_list[:select_node+1]
@@ -94,7 +94,7 @@ for select_node in range(151,int(len(node_list))+1,15):
 # print(natural_conn_cleaned)
 # max_natural_conn = natural_conn.index(max(natural_conn_cleaned))
 # print(max(natural_conn_cleaned))
-max_natural_conn = natural_conn.index(1.596723933094875)+1
+##  max_natural_conn = natural_conn.index(1.596723933094875)+1
 # print(max_natural_conn)
 # print(x)
 
@@ -134,11 +134,11 @@ def mean_squared_error(y_true, y_pred):
 
 fig, ax = plt.subplots(figsize=(8, 4))
 # p = ax.twinx()
-ax.axvline(max_natural_conn, c='#E89B9E', ls='--')
+## ax.axvline(max_natural_conn, c='#E89B9E', ls='--')
 # ax.axhline(1.596723933094875, c='#E89B9E', ls='--')
 # p.axhline(0.3, c='#ffccc3', ls='--')
 line_CNN = ax.plot(x, natural_conn,marker='.', markerfacecolor='white', label='Natural Connectivity', color='#d92523')
-plt.text(max_natural_conn,0.3,12)
+## plt.text(max_natural_conn,0.3,12)
 # line_mse = ax.plot(x, mse, marker='<', markerfacecolor='white', label='MSE', color='#d92523')
 # line_aec = p.plot(x, mse, marker='>', markerfacecolor='white', label='AEC', color='#2e7ebb')
 ax.set_ylabel('Natural Connectivity')

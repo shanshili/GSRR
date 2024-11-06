@@ -21,7 +21,7 @@ with open('similarity score\zGP_75_node_450_data_2000model_20241102_211834.txt',
 Gpn = 75
 node = 450
 data_num = 2000
-select_node = 45
+select_node = 12
 adj_ori = np.load('./origin_data/adj_ori'+'_node_'+str(node)+'_data_'+str(data_num)+'.npz', allow_pickle=True)
 location_file = np.load('./origin_data/location'+'_node_'+str(node)+'_data_'+str(data_num)+'.npz', allow_pickle=True)
 A = adj_ori['arr_0']
@@ -101,7 +101,7 @@ plt.scatter(lon[selected_node], lat[selected_node], s = 20,c='#7e2f8e')
 plt.xlabel('Longitude')
 plt.ylabel('Latitude')
 plt.title('MGC-RM')
-## plt.savefig('WPR_result\Gp' + str(Gpn) +'_MGC-RM'+'select'+str(select_node) +'.svg', format='svg')
+plt.savefig('WPR_result\Gp' + str(Gpn) +'_MGC-RM'+'select'+str(select_node) +'.svg', format='svg')
 plt.show()
 
 
