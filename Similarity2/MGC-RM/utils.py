@@ -58,16 +58,15 @@ def natural_connectivity2(G):
 
 def get_h_hop_neighbors(G, node, hop=1):
     '''
-
     :param G: 图
     :param node: 中心节点
     :param hop: 跳数
     :return:
     '''
     output = {}
-    layers = dict(nx.bfs_successors(G, source=node, depth_limit=hop))
+    layers = dict(nx.bfs_successors(G, source=node, depth_limit=hop))  # 广度优先搜索（BFS）
     nodes = [node]
-    for i in range(1, hop+1):
+    for i in range(1, hop+1):  # 遍历每一跳
         output[i] = []
         for x in nodes:
             output[i].extend(layers.get(x, []))
@@ -78,39 +77,92 @@ def communication_energy_loss(G, node, neighbors, E_0, E_elec=600, alpha=3, beta
     # Neighbor_number = len(neighbors)
     Energy = E_0
     for i in neighbors:
-        dis = nx.shortest_path_length(G, node, i)
-        Energy -= (2 * E_elec + beta * dis ** alpha) * 1e-9 * bit
+        dis = nx.shortest_path_length(G, node, i)  # 和邻居之间的最短路径
+        Energy -= (2 * E_elec + beta * dis ** alpha) * 1e-9 * bit   # 和范围半径内的每个邻居通信
     return Energy
 
-def network_life(pos, selected_nodes, k):
-    pos_selected = find_value_according_index_list(pos, selected_nodes)
-    # 构图
-    A = kneighbors_graph(pos_selected, k)
-    G = nx.Graph(A)
-    rad = nx.radius(G)
+def network_life(G):
+    n = G.number_of_nodes()
     # 收集每轮剩余能量
     # energy_collect = []
     # 初始能量
     energy_loss = [6] * nx.number_of_nodes(G)
-    # 通信轮次
-    for i in range(100000):
-        # 节点
-        for j in range(nx.number_of_nodes(G)):
-            # 找到通信范围
-            neighbor_dict, neighbor_list = get_h_hop_neighbors(G, j, rad)
-            # 计算剩余能量
-            node_energy_loss = communication_energy_loss(G, j, neighbor_list, energy_loss[j])
-            energy_loss[j] = node_energy_loss
-            # print(j)
-        # print(energy_loss)
-        # energy_collect.append(energy_loss.copy())  # 使用浅拷贝避免覆盖
+    res_energy_avg = 0
+    i = 0
+    """
+    如果图不是连通的，nx.radius 函数会抛出 NetworkXError，因为半径的定义要求图必须是连通的。
+    对于非连通图，你需要分别计算每个连通子图的半径。
+    """
+    try:
+        # 尝试计算整个图的半径
+        radius = nx.radius(G)
+        # 通信轮次
+        for i in range(100000):
+            # 节点
+            for j in range(n):
+                # 找到通信范围
+                neighbor_dict, neighbor_list = get_h_hop_neighbors(G, j)
+                # 计算剩余能量
+                node_energy_loss = communication_energy_loss(G, j, neighbor_list, energy_loss[j])
+                energy_loss[j] = node_energy_loss
+                # print(j)
+            # print(energy_loss)
+            # energy_collect.append(energy_loss.copy())  # 使用浅拷贝避免覆盖
 
-        if any(v <= 0 for v in energy_loss):  # 判断列表中是否有小于0的数
-            rest_energy = [u for u in energy_loss if u > 0]     # 删除小于0的数
-            res_energy_avg = sum(rest_energy) / len(selected_nodes)
-            # print('网络寿命为：{}'.format(i + 1))
-            break
-    # energy_collect = np.array(energy_collect)
+            if any(v <= 0 for v in energy_loss):  # 判断列表中是否有小于0的数
+                rest_energy = [u for u in energy_loss if u > 0]  # 删除小于0的数
+                res_energy_avg = sum(rest_energy) / n
+                # print('网络寿命为：{}'.format(i + 1))
+                break
+        # energy_collect = np.array(energy_collect)
+
+    except nx.NetworkXError as e:
+        # 获取所有连通子图
+        connected_components = list(nx.connected_components(G))
+        # 计算连通子图的个数
+        num_connected_components = len(connected_components)
+        print('connected: ',n)
+        print('connected_components: ', num_connected_components)
+        # 计算每个连通子图的半径
+        radii = []
+        ii = [[] for _ in range(num_connected_components)]
+        res_energy_avg_sub = [[] for _ in range(num_connected_components)]
+        com = 0
+        for cc in connected_components:
+            # print(cc)
+            subgraph = G.subgraph(cc)
+            subgraph_radius = nx.radius(subgraph)
+            radii.append(subgraph_radius)
+            # 通信轮次
+            for x in range(100000):
+                # 节点
+                for j in range(n):
+                    # 找到通信范围
+                    neighbor_dict_sub, neighbor_list_sub = get_h_hop_neighbors(G, j)
+                    # 计算剩余能量
+                    node_energy_loss_sub = communication_energy_loss(G, j, neighbor_list_sub, energy_loss[j])
+                    energy_loss[j] = node_energy_loss_sub
+                    # print(j)
+                # print(energy_loss)
+                # energy_collect.append(energy_loss.copy())  # 使用浅拷贝避免覆盖
+
+                if any(v <= 0 for v in energy_loss):  # 判断列表中是否有小于0的数
+                    rest_energy = [u for u in energy_loss if u > 0]  # 删除小于0的数
+                    res_energy_avg_sub[com] = sum(rest_energy) / n
+                    # print('网络寿命为：{}'.format(i + 1))
+                    break
+
+            ii[com] = x + 1
+            com = com+1
+
+            # print('ii',ii)
+            # print('res_energy_avg_sub',res_energy_avg_sub)
+        i = sum(ii)/len(ii)
+        res_energy_avg = sum(res_energy_avg_sub)/len(res_energy_avg_sub)
+            # energy_collect = np.array(energy_collect)
+    # print('i',i + 1)
+    # ('res_energy_avg_sub', res_energy_avg)
+
     return i + 1, res_energy_avg
 
 

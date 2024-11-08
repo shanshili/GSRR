@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib import rcParams
 import numpy as np
 import networkx as nx
-from utils import find_value_according_index_list,natural_connectivity2
+from utils import find_value_according_index_list,natural_connectivity2,network_life
 from GraphConstruct2 import location_graph
 from sklearn.neighbors import NearestNeighbors
 
@@ -47,14 +47,16 @@ g = [[] for _ in range(len(node_list))]
 A = [[] for _ in range(len(node_list))]
 d = 1
 natural_conn = [None] * (int(len(node_list)) + 1)
+res_energy_avg = [None] * (int(len(node_list)) + 1)
+communicate_circle = [None] * (int(len(node_list)) + 1)
 x = [None] * (int(len(node_list)) + 1)
 i = 0
 # print(len(node_list))
-for select_node in range(1,150,1):
+for select_node in range(0,200,1):
     # print(select_node+1)
     x[i] = select_node+1
     selected_node[i] = node_list[:select_node+1]
-    # print(selected_node[select_node] )
+    # print(selected_node[i] )
     fea_list = find_value_according_index_list(fea_o, selected_node[i])
     location_list = find_value_according_index_list(location, selected_node[i])
     # print(location_list)
@@ -65,6 +67,9 @@ for select_node in range(1,150,1):
     if x[i] > 1:
         g[i],A[i] = location_graph(location_list)
         natural_conn[i] = natural_connectivity2(g[i])
+        communicate_circle[i],res_energy_avg[i] = network_life(g[i])
+        # print(communicate_circle[i],res_energy_avg[i])
+        # print(g[i])
     else:
         test = NearestNeighbors(radius=0.05)
         test.fit(location)  #
@@ -72,12 +77,13 @@ for select_node in range(1,150,1):
         g[i] = nx.from_numpy_array(A[i])
         A[i] = nx.to_pandas_adjacency(g[i])
         # nx.draw(g[i], pos=location_list, with_labels=True, alpha=0.4, node_size=10, font_size=5)
+    print(select_node)
     i = i+1
-for select_node in range(151,int(len(node_list))+1,15):
+for select_node in range(201,int(len(node_list))+1,5):
     # print(select_node+1)
     x[i] = select_node+1
     selected_node[i] = node_list[:select_node+1]
-    # print(selected_node[select_node] )
+    # print(selected_node[i] )
     fea_list = find_value_according_index_list(fea_o, selected_node[i])
     location_list = find_value_according_index_list(location, selected_node[i])
     # print(location_list)
@@ -87,9 +93,12 @@ for select_node in range(151,int(len(node_list))+1,15):
 #     location_list = find_value_according_index_list(location,selected_node[select_node])
     g[i],A[i] = location_graph(location_list)
     natural_conn[i] = natural_connectivity2(g[i])
+    communicate_circle[i], res_energy_avg[i] = network_life(g[i])
+    print(select_node)
     i = i+1
 
 ## print(natural_conn)
+# print(communicate_circle,res_energy_avg)
 # natural_conn_cleaned = [value for value in natural_conn if value is not None]
 # print(natural_conn_cleaned)
 # max_natural_conn = natural_conn.index(max(natural_conn_cleaned))
@@ -132,32 +141,27 @@ def mean_squared_error(y_true, y_pred):
 
 
 
-fig, ax = plt.subplots(figsize=(8, 4))
-# p = ax.twinx()
+fig, conn = plt.subplots(figsize=(8, 4))
+AEC = conn.twinx()
 ## ax.axvline(max_natural_conn, c='#E89B9E', ls='--')
 # ax.axhline(1.596723933094875, c='#E89B9E', ls='--')
-# p.axhline(0.3, c='#ffccc3', ls='--')
-line_CNN = ax.plot(x, natural_conn,marker='.', markerfacecolor='white', label='Natural Connectivity', color='#d92523')
-## plt.text(max_natural_conn,0.3,12)
-# line_mse = ax.plot(x, mse, marker='<', markerfacecolor='white', label='MSE', color='#d92523')
-# line_aec = p.plot(x, mse, marker='>', markerfacecolor='white', label='AEC', color='#2e7ebb')
-ax.set_ylabel('Natural Connectivity')
-plt.title('Natural Connectivity')
-#p.set_ylabel('AEC')
+line_CONN= conn.plot(x, natural_conn, marker = '.',markerfacecolor='white', label='Natural Connectivity', color='#d92523')
+line_AEC = AEC.plot(x, res_energy_avg, markerfacecolor='white', label='res_energy_avg', color='#2e7ebb')
 
-# 设置两轴颜色
-# ax.spines['left'].set_color('#1d2e58')
-# p.spines['left'].set_color('#1d2e58')
-# ax.spines['right'].set_color('#821e26')
-# p.spines['right'].set_color('#821e26')
-# 刻度颜色
-# ax.tick_params(axis='y', labelcolor='#1d2e58', color='#1d2e58')
-# p.tick_params(axis='y', labelcolor='#821e26', color='#821e26')
+conn.set_ylabel('Natural Connectivity')
+AEC.set_ylabel('res_energy_avg')
+plt.title('Reference indicators')
 
-
-ax.legend()
 # 设置坐标轴名
-ax.set_xlabel('Number of nodes')
-plt.savefig('.\Reference indicators\_Natural Connectivity'+'.svg', format='svg',dpi=600)
+conn.set_xlabel('Number of nodes')
+
+# 设置图例
+lines = line_CONN + line_AEC
+labels = [l.get_label() for l in lines]
+conn.legend(lines, labels, loc='upper right')
+# 统一两个 y 轴的比例
+# conn.set_ylim(0, 1.7)
+# AEC.set_ylim(0, 1.7)
+plt.savefig('.\Reference indicators\_Reference indicator_test'+'.svg', format='svg',dpi=600)
 plt.show()
 
