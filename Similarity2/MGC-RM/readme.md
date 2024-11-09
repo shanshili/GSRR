@@ -1,3 +1,23 @@
+# 1
+
+## perturbation
+
+Generate a perturbation graph
+
+## perturbation2
+
+Generate a perturbation graph
+
+packaged into a function
+
+## dataprocess2
+
+## GraphConstruct2
+
+
+
+# 2
+
 ## MFC_RMF
 
 Multi-Granularity Cross Representation and Matching
@@ -11,30 +31,36 @@ torch.save pth
 
 ## MFC_RMF2
 
-Specify a graph pair to train and save the model. 
+1. Specify a graph pair to **train** and save the model. 
 
-Add the model overload module to generate the similarity score of the remaining graph pair and save it as a file
+2. Add the model overload module to generate the **similarity score** of the remaining graph pair and save it as a file. (Nearly 4 hours)
+3. Save prediction_loss as txt and fig to evaluate the difference in the effect of the graph
 
 ```python
-np.savetxt('./similarity score/z'+'_node_'+str(node)+'_data_'+str(data_num)+'model_'+str(formatted_time)+'.txt', z_p)
+np.savetxt('./similarity score/z'+ 'GP_'+str(j)+'_node_'+str(node)+'_data_'+str(data_num)+'model_'+str(formatted_time)+'.txt', z_p)
+
+np.savetxt('./prediction_loss/GraphPair_' + str(j) + '_n' + str(node) + '_d' + str(data_num) + '_Prediction_Loss_epoch_' + str(args.max_epoch) + '_lr_' + str(args.lr) + '_' + str(formatted_time) +'.txt', loss_history2)
 ```
 
+## model
+
+GAT
 
 
 
+# 3
 
-## perturbation
+## plotpredictloss
 
-Generate a perturbation graph
+## plotscore
 
-## perturbation2
-
-Generate a perturbation graph
-
-packaged into a function
-
-
+# 4
 
 ## PageRank2
 
 weights PageRank
+
+# 5
+
+## Perform
+
