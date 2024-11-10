@@ -1,11 +1,11 @@
-# import EntropyHub as EH
 import networkx as nx
 import numpy as np
 import math
-from sklearn.neighbors import kneighbors_graph
-
-
-# update index_list
+from GraphConstruct2 import topological_features_construct
+from model import AutoEncoder
+import torch
+from sklearn.preprocessing import MinMaxScaler
+from torch import nn
 
 
 def find_value_according_index_list(aim_list, index_list):  # 索引转换 从排序索引找对应节点
@@ -15,22 +15,6 @@ def find_value_according_index_list(aim_list, index_list):  # 索引转换 从�
         reslut_list.append(aim_list[index_list[i]])
         i = i + 1
     return reslut_list
-
-
-# 时间序列的三种熵
-# 近似熵
-# def ApEn(Datalist, r=0.2, m=2):
-#     th = r * np.std(Datalist)
-#     return EH.ApEn(Datalist, m, r=th)[0][-1]
-# # 样本熵
-# def SampleEntropy2(Datalist, r, m=2):
-#     th = r * np.std(Datalist) #容限阈值
-#     return EH.SampEn(Datalist, m, r=th)[0][-1]
-# # 模糊熵
-# def FuzzyEn2(s:np.ndarray, r=0.2, m=2, n=2):
-#     th = r * np.std(s)
-#     return EH.FuzzEn(s, 2, r=(th, n))[0][-1]
-
 
 def natural_connectivity(G):
     adj_spec = nx.adjacency_spectrum(G)
@@ -73,6 +57,7 @@ def get_h_hop_neighbors(G, node, hop=1):
         nodes = output[i]
     return output, output[hop]
 
+
 def communication_energy_loss(G, node, neighbors, E_0, E_elec=600, alpha=3, beta=120, bit=1000):
     # Neighbor_number = len(neighbors)
     Energy = E_0
@@ -83,17 +68,15 @@ def communication_energy_loss(G, node, neighbors, E_0, E_elec=600, alpha=3, beta
 
 def network_life(G):
     n = G.number_of_nodes()
-    # 收集每轮剩余能量
-    # energy_collect = []
     # 初始能量
-    energy_loss = [6] * nx.number_of_nodes(G)
+    energy_loss = [20] * nx.number_of_nodes(G)
     res_energy_avg = 0
     i = 0
     """
     如果图不是连通的，nx.radius 函数会抛出 NetworkXError，因为半径的定义要求图必须是连通的。
     对于非连通图，你需要分别计算每个连通子图的半径。
     """
-    try:
+    try: # 连通图
         # 尝试计算整个图的半径
         radius = nx.radius(G)
         # 通信轮次
@@ -101,7 +84,7 @@ def network_life(G):
             # 节点
             for j in range(n):
                 # 找到通信范围
-                neighbor_dict, neighbor_list = get_h_hop_neighbors(G, j)
+                neighbor_dict, neighbor_list = get_h_hop_neighbors(G, j, radius)
                 # 计算剩余能量
                 node_energy_loss = communication_energy_loss(G, j, neighbor_list, energy_loss[j])
                 energy_loss[j] = node_energy_loss
@@ -115,8 +98,9 @@ def network_life(G):
                 # print('网络寿命为：{}'.format(i + 1))
                 break
         # energy_collect = np.array(energy_collect)
+        print('i',i)
 
-    except nx.NetworkXError as e:
+    except nx.NetworkXError as e:  # 非连通图
         # 获取所有连通子图
         connected_components = list(nx.connected_components(G))
         # 计算连通子图的个数
@@ -138,7 +122,7 @@ def network_life(G):
                 # 节点
                 for j in range(n):
                     # 找到通信范围
-                    neighbor_dict_sub, neighbor_list_sub = get_h_hop_neighbors(G, j)
+                    neighbor_dict_sub, neighbor_list_sub = get_h_hop_neighbors(G, j, subgraph_radius)
                     # 计算剩余能量
                     node_energy_loss_sub = communication_energy_loss(G, j, neighbor_list_sub, energy_loss[j])
                     energy_loss[j] = node_energy_loss_sub
@@ -157,13 +141,59 @@ def network_life(G):
 
             # print('ii',ii)
             # print('res_energy_avg_sub',res_energy_avg_sub)
-        i = sum(ii)/len(ii)
+        i = max(ii)
         res_energy_avg = sum(res_energy_avg_sub)/len(res_energy_avg_sub)
+        print(ii)
+        print(i)
+        print(res_energy_avg_sub)
+        print(res_energy_avg)
             # energy_collect = np.array(energy_collect)
     # print('i',i + 1)
     # ('res_energy_avg_sub', res_energy_avg)
 
     return i + 1, res_energy_avg
+
+def MSE_node_feature(g,node):
+    topological_features = topological_features_construct(g)
+    data = np.array(topological_features)
+    norm_scalar = MinMaxScaler()
+    data = np.transpose(norm_scalar.fit_transform(data))
+    data = torch.tensor(data, dtype=torch.float32)
+    model_path = './model_save/autoencoder.pth'
+    autoencoder = AutoEncoder()
+    autoencoder = torch.load(model_path)
+    autoencoder.eval()
+    loss_fun = nn.MSELoss()
+    loss_history = []
+    first_node_encode = []
+    with torch.no_grad():
+        encoded, decoded = autoencoder(data)
+        loss = loss_fun(decoded, data)
+        loss_history.append(loss.item())
+        # print(encoded)
+        # print(loss)
+        first_node_encode.append(encoded[node].item())
+        # print(' loss: ' + str(loss.item()))
+        # print(' encode: ' + str(first_node_encode))
+    return first_node_encode
+
+def mean_squared_error(y_true, y_pred):
+    """
+    计算均方误差 (MSE)
+    参数:
+    y_true (array-like): 真实值
+    y_pred (array-like): 预测值
+    返回:
+    float: 均方误差
+    """
+    # 确保输入是 NumPy 数组
+    y_true = np.array(y_true)
+    y_pred = np.array(y_pred)
+    # 计算误差平方
+    squared_errors = (y_true - y_pred) ** 2
+    # 计算均方误差
+    mse = np.mean(squared_errors)
+    return mse
 
 
 def f_distance(pos_i, pos_j):

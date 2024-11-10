@@ -2,7 +2,7 @@ import torch
 from sympy.codegen import Print
 from torch import nn, optim
 import pandas as pd
-from _240810data import get_data
+# from _240810data import get_data
 from _240830GraphConstruct import location_graph, topological_features_construct, data_color_graph
 import numpy as np
 import matplotlib.pyplot as plt
@@ -10,7 +10,7 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 epoch_range = 850
 """
-Train node quality based on node topology characteristics
+Train node quality based on node topology characteristics (no tem data)
 """
 
 
@@ -137,3 +137,4 @@ print(encoded.detach().numpy()[[460,560],[0,0]])
 data_color_graph(encoded.detach().numpy(),location_g,train_set,epoch_range)
 plt.show()
 
+torch.save(autoencoder, './model_save/autoencoder.pth')
