@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib import rcParams
 import numpy as np
 import networkx as nx
-from utils import find_value_according_index_list,natural_connectivity2,network_life,MSE_node_feature,mean_squared_error
+from utils import find_value_according_index_list,natural_connectivity2,network_life,MSE_node_feature,mean_squared_error,DS2,DS3
 from GraphConstruct2 import location_graph
 from sklearn.neighbors import NearestNeighbors
 from model import AutoEncoder
@@ -54,12 +54,13 @@ natural_conn = [None] * (int(len(node_list)) + 1)
 res_energy_avg = [None] * (int(len(node_list)) + 1)
 communicate_circle = [None] * (int(len(node_list)) + 1)
 mse = [None] * (int(len(node_list)) + 1)
+Ds = [None] * (int(len(node_list)) + 1)
 x = [None] * (int(len(node_list)) + 1)
 i = 0 # 采样计数
 """
 小图密集采样显示
 """
-for select_node in range(0,150,1):
+for select_node in range(1,150,1):
     x[i] = select_node+1 # 已选择节点数目
     selected_node[i] = node_list[:select_node+1]
     fea_list = find_value_according_index_list(fea_o, selected_node[i])
@@ -70,7 +71,11 @@ for select_node in range(0,150,1):
         # communicate_circle[i],res_energy_avg[i] = network_life(g[i])
         encode = MSE_node_feature(g[i],0)
         mse[i] = mean_squared_error(encode_o,encode)
-        print(mse[i])
+        # Ds[i] = DS(np.array(location_list)[:, 0],np.array(location_list)[:, 1], select_node + 1)
+        Ds[i] = DS2(g[i], select_node + 1)
+        # Ds[i] = DS3(location_list, select_node + 1)
+        # print(mse[i])
+        print(Ds[i])
         # print(communicate_circle[i],res_energy_avg[i])
     else:  # 仅选择一个节点时
         test = NearestNeighbors(radius=0.05)
@@ -80,14 +85,19 @@ for select_node in range(0,150,1):
         A[i] = nx.to_pandas_adjacency(g[i])
         encode = MSE_node_feature(g[i],0)
         mse[i] = mean_squared_error(encode_o, encode)
-        print(mse[i])
+        # print(np.array(location_list)[:, 0])
+        # Ds[i] = DS(np.array(location_list)[:, 0],np.array(location_list)[:, 1], select_node + 1)
+        Ds[i] = DS2(g[i], select_node + 1)
+        # Ds[i] = DS3(location_list, select_node + 1)
+        # print(mse[i])
+        print(Ds[i])
         # nx.draw(g[i], pos=location_list, with_labels=True, alpha=0.4, node_size=10, font_size=5)
     print(x[i])
     i = i+1  # 采样计数
 """
 大图粗略采样显示
 """
-for select_node in range(151,int(len(node_list))+1,2):
+for select_node in range(151,int(len(node_list))+1,10):
     x[i] = select_node+1
     selected_node[i] = node_list[:select_node+1]
     fea_list = find_value_according_index_list(fea_o, selected_node[i])
@@ -97,7 +107,11 @@ for select_node in range(151,int(len(node_list))+1,2):
     # communicate_circle[i], res_energy_avg[i] = network_life(g[i])
     encode = MSE_node_feature(g[i],0)
     mse[i] = mean_squared_error(encode_o, encode)
-    print(mse[i])
+    # Ds[i] = DS(np.array(location_list)[:, 0],np.array(location_list)[:, 1], select_node + 1)
+    Ds[i] = DS2(g[i], select_node + 1)
+    # Ds[i] = DS3(location_list, select_node + 1)
+    # print(mse[i])
+    print(Ds[i])
     print(x[i])
     i = i+1
 
@@ -131,32 +145,38 @@ for select_node in range(151,int(len(node_list))+1,2):
 
 fig, conn = plt.subplots(figsize=(12, 4))
 # AEC = conn.twinx()
-cc = conn.twinx()
+# cc = conn.twinx()
 mse_ax = conn.twinx()
-cc.spines['right'].set_position(('outward', 40))
+ds_ax = conn.twinx()
+# cc.spines['right'].set_position(('outward', 40))
+ds_ax.spines['right'].set_position(('outward', 40))
 ## ax.axvline(max_natural_conn, c='#E89B9E', ls='--')
 # ax.axhline(1.596723933094875, c='#E89B9E', ls='--')
 line_CONN= conn.plot(x, natural_conn, marker = '.',markerfacecolor='white', label='Natural Connectivity', color='#d92523')
 # line_AEC = AEC.plot(x, res_energy_avg, markerfacecolor='white', label='res_energy_avg', color='#2e7ebb')
-line_cc = cc.plot(x, communicate_circle,marker = '.', markerfacecolor='white', label='communicate_circle', color='#00FF00')
+# line_cc = cc.plot(x, communicate_circle,marker = '.', markerfacecolor='white', label='communicate_circle', color='#00FF00')
 line_mse = mse_ax.plot(x, mse,marker = '.', markerfacecolor='white', label='mse', color='#FFA500')
+line_ds = ds_ax.plot(x, Ds,marker = '.', markerfacecolor='white', label='ds', color='#00FFFF')
+
 
 conn.set_ylabel('Natural Connectivity')
 # AEC.set_ylabel('res_energy_avg')
-cc.set_ylabel('communicate_circle')
+# cc.set_ylabel('communicate_circle')
 mse_ax.set_ylabel('mse')
+ds_ax.set_ylabel('Ds')
+
 plt.title('Reference indicators')
 
 # 设置坐标轴名
 conn.set_xlabel('Number of nodes')
 
 # 设置图例
-lines = line_CONN +  line_cc + line_mse
+lines = line_CONN +  line_ds + line_mse
 labels = [l.get_label() for l in lines]
 conn.legend(lines, labels, loc='upper right')
 # 统一两个 y 轴的比例
 # conn.set_ylim(0, 1.7)
 # AEC.set_ylim(0, 1.7)
-plt.savefig('.\Reference indicators\_Reference indicator_test'+'.svg', format='svg',dpi=600)
+plt.savefig('.\Reference indicators\DS2_maximum_hole_radius'+'.svg', format='svg',dpi=600)
 plt.show()
 

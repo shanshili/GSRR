@@ -1,11 +1,15 @@
 import networkx as nx
 import numpy as np
 import math
+import numpy
 from GraphConstruct2 import topological_features_construct
 from model import AutoEncoder
 import torch
 from sklearn.preprocessing import MinMaxScaler
 from torch import nn
+from scipy.spatial.distance import pdist, squareform
+from scipy.spatial import cKDTree
+import matplotlib.pyplot as plt
 
 
 def find_value_according_index_list(aim_list, index_list):  # 索引转换 从排序索引找对应节点
@@ -196,14 +200,12 @@ def mean_squared_error(y_true, y_pred):
     return mse
 
 
+
 def f_distance(pos_i, pos_j):
-
-
     # f坐标(k=1:横坐标; k=2:纵坐标)
     position_fi = []
     position_fj = []
     center_f = []
-
     for k in range(2):
         if abs(pos_i[k] - pos_j[k]) >= 0.5:
             pos_fi = pos_i[k]
@@ -230,8 +232,6 @@ def f_distance(pos_i, pos_j):
     return position_fi, position_fj, center_f, f_d
 
 def g_distance(pos_i, pos_j):
-
-
     # g坐标(k=1:横坐标; k=2:纵坐标)
     position_gi = []
     position_gj = []
@@ -262,83 +262,213 @@ def g_distance(pos_i, pos_j):
 
     return position_gi, position_gj, center_g, g_d
 
+def DS(lon, lat, num_selected):
+    """
+    原始DS，归一化坐标
+    Rst = (2 / (math.pi * num_selected)) ** 0.5
+    g_distance，f_distance计算空洞半径
+    不包含前三个点，整体数值较小，运算较慢
+    """
+    # 区域压缩(最大最小值)
+    lon_max = np.max(lon)
+    lon_min = np.min(lon)
+    lat_max = np.max(lat)
+    lat_min = np.min(lat)
+    lon_n = (lon - lon_min) / (lon_max - lon_min)
+    lat_n = (lat - lat_min) / (lat_max - lat_min)
 
-def f_distance_2(lon, lat, i, j):
-    # lon: 横坐标列表
-    # lat: 纵坐标列表
-    # i: 节点i
-    # j: 节点j
+    position = map(list, zip(lon_n, lat_n))  # 平面的，为了画图
+    pos = list(position)
+    # print(pos)
 
-    # f坐标(横坐标)
-    if abs(lon[i] - lon[j]) >= 0.5:
-        lon_fi = lon[i]
-        lon_fj = lon[j]
-    elif abs(lon[i] - lon[j]) < 0.5 and lon[i] >= lon[j]:
-        lon_fi = lon[i]
-        lon_fj = lon[j] + 1
-    elif abs(lon[i] - lon[j]) < 0.5 and lon[i] < lon[j]:
-        lon_fi = lon[i] + 1
-        lon_fj = lon[j]
+    hole_radius_f = []
+    hole_radius_g = []
+    for i in range(num_selected):
+        for j in range(num_selected):
+            if i == j: continue
+            else:
+                position_fi, position_fj, center_f, f_d = f_distance(pos[i], pos[j])
+                position_gi, position_gj, center_g, g_d = g_distance(pos[i], pos[j])
 
-    # f坐标(纵坐标)
-    if abs(lat[i] - lat[j]) >= 0.5:
-        lat_fi = lat[i]
-        lat_fj = lat[j]
-    elif abs(lat[i] - lat[j]) < 0.5 and lat[i] >= lat[j]:
-        lat_fi = lat[i]
-        lat_fj = lat[j] + 1
-    elif abs(lat[i] - lat[j]) < 0.5 and lat[i] < lat[j]:
-        lat_fi = lat[i] + 1
-        lat_fj = lat[j]
+            for k in range(num_selected):
+                position_fmi, position_fmj, center_fm, fm_d = f_distance(center_f, pos[k])
+                position_gmi, position_gmj, center_gm, gm_d = g_distance(center_g, pos[k])
 
-    # f距离
-    f_d = math.sqrt((lon_fi - lon_fj) ** 2 + (lat_fi - lat_fj) ** 2)
+                if fm_d >= f_d / 2 and gm_d >= f_d / 2: hole_radius_f.append(f_d / 2)
+                if fm_d >= g_d / 2 and gm_d >= g_d / 2: hole_radius_g.append(g_d / 2)
 
-    # f中心(横坐标)
-    if (lon_fi + lon_fj) / 2 >= 1: m_fi = (lon_fi + lon_fj) / 2 - 1
-    else: m_fi = (lon_fi + lon_fj) / 2
+    # print(hole_radius_f,hole_radius_g)
+    hole_radius = hole_radius_f + hole_radius_g
+    # print(hole_radius)
+    r_min = min(hole_radius)
+    r_max = max(hole_radius)
+    # D = r_min / r_max
 
-    return lon_fi, lat_fi, lon_fj, lat_fj, f_d
+    Rst = (2 / (math.pi * num_selected)) ** 0.5
 
-def g_distance_2(lon, lat, i, j):
-    # lon: 横坐标列表
-    # lat: 纵坐标列表
-    # i: 节点i
-    # j: 节点j
-
-    # g坐标(横坐标)
-    if abs(lon[i] - lon[j]) <= 0.5:
-        lon_gi = lon[i]
-        lon_gj = lon[j]
-    elif abs(lon[i] - lon[j]) > 0.5 and lon[i] >= lon[j]:
-        lon_gi = lon[i]
-        lon_gj = lon[j] + 1
-    elif abs(lon[i] - lon[j]) > 0.5 and lon[i] < lon[j]:
-        lon_gi = lon[i] + 1
-        lon_gj = lon[j]
-
-    # g坐标(纵坐标)
-    if abs(lat[i] - lat[j]) <= 0.5:
-        lat_gi = lat[i]
-        lat_gj = lat[j]
-    elif abs(lat[i] - lat[j]) > 0.5 and lat[i] >= lat[j]:
-        lat_gi = lat[i]
-        lat_gj = lat[j] + 1
-    elif abs(lat[i] - lat[j]) > 0.5 and lat[i] < lat[j]:
-        lat_gi = lat[i] + 1
-        lat_gj = lat[j]
-
-    # f距离
-    g_d = math.sqrt((lon_gi - lon_gj) ** 2 + (lat_gi - lat_gj) ** 2)
-
-    return lon_gi, lat_gi, lon_gj, lat_gj, g_d
+    return Rst / r_max
 
 
-def lb_to_xy(lat, lon):
-    r = 6371
-    theta = np.pi/2 - np.radians(lat)
-    phi = np.radians(lon)
-    x = r * np.sin(theta) * np.cos(phi)
-    y = r * np.sin(theta) * np.sin(phi)
-    coo = np.vstack([x, y])
-    return coo
+
+
+def find_holes(graph):
+    # 使用 BFS 查找连通分量
+    holes = list(nx.connected_components(graph))
+    return holes
+
+def compute_radius(hole, graph):
+    # 计算空洞的半径
+    max_radius = 0
+    hole_graph = graph.subgraph(hole)
+    eccentricities = nx.eccentricity(hole_graph)
+    """
+    使用 nx.eccentricity 函数来计算每个节点的偏心率（eccentricity），
+    即从该节点到图中其他节点的最短路径的最大值。
+    半径是所有偏心率中的最小值
+    """
+    radius = min(eccentricities.values())
+    return radius
+
+def compute_radius2(hole, positions):
+    """
+    考虑物理位置
+    """
+    # 计算空洞的半径
+    # 提取空洞中的节点位置
+    # print(hole)
+    # print(positions)
+    hole_positions = [positions[node] for node in hole]
+    # 计算所有节点之间的距离
+    if len(hole_positions) < 2:
+        return 0  # 如果空洞中只有一个节点，半径为0
+    distances = pdist(hole_positions)
+    # 找到最大距离
+    max_distance = np.max(distances)
+    # 最大空洞半径是最大距离的一半
+    max_radius = max_distance / 2
+    return max_radius
+
+def maximum_hole_radius(graph):
+    """
+    不考虑物理距离
+    """
+    holes = find_holes(graph)
+    max_radius = 0
+    for hole in holes:
+        radius = compute_radius(hole, graph)
+        max_radius = max(max_radius, radius)
+    return max_radius
+
+def maximum_hole_radius2(positions):
+    """
+    重新构图
+    考虑物理距离，但是没有限制连接数量
+    """
+    # 构建图
+    num_nodes = len(positions)
+    Gn = nx.Graph()
+    Gn.add_nodes_from(range(num_nodes))
+    # 计算所有节点之间的距离
+    distance_matrix = squareform(pdist(positions))
+    # print(distance_matrix)
+    # 添加边，如果两个节点之间的距离小于阈值，则认为它们是连通的
+    for i in range(num_nodes):
+        for j in range(i + 1, num_nodes):
+            if distance_matrix[i, j] < 1:
+                Gn.add_edge(i, j)
+    # print(Gn)
+    # plt.figure()
+    # nx.draw(Gn,pos = positions,with_labels=True, alpha = 0.4, node_size=10, font_size = 5)
+    # plt.show()
+    # 查找连通分量
+    holes = find_holes(Gn)
+
+    # 计算每个空洞的最大半径
+    max_radius = 0
+    for hole in holes:
+        radius = compute_radius2(hole, positions)
+        max_radius = max(max_radius, radius)
+
+    return max_radius
+
+def maximum_hole_radius3(positions, k=4):
+    """
+    重新构图
+    考虑物理距离，考虑连接的邻居个数
+    但是起始必须大于4个节点
+    """
+    # 构建图
+    num_nodes = len(positions)
+    G = nx.Graph()
+    G.add_nodes_from(range(num_nodes))
+
+    if num_nodes < 5:
+        # 计算所有节点之间的距离
+        distance_matrix = squareform(pdist(positions))
+        # print(distance_matrix)
+        # 添加边，如果两个节点之间的距离小于阈值，则认为它们是连通的
+        for i in range(num_nodes):
+            for j in range(i + 1, num_nodes):
+                if distance_matrix[i, j] < 1:
+                    G.add_edge(i, j)
+        # plt.figure()
+        # nx.draw(G,pos = positions,with_labels=True, alpha = 0.4, node_size=10, font_size = 5)
+        # plt.show()
+    else:
+        # 使用 cKDTree 找到每个节点的最近 k 个邻居
+        tree = cKDTree(positions)
+        _, indices = tree.query(positions, k=k + 1)  # k+1 是因为最近的一个点是自己
+        # print(indices)
+        # 添加边
+        for i in range(num_nodes):
+            for j in indices[i][1:]:  # 跳过第一个元素（即自身）
+                G.add_edge(i, j)
+    # 查找连通分量
+    holes = find_holes(G)
+
+    # 计算每个空洞的最大半径
+    max_radius = 0
+    for hole in holes:
+        radius = compute_radius2(hole, positions)
+        max_radius = max(max_radius, radius)
+
+    return max_radius
+
+def DS3(position,num_selected):
+    """
+    max_radius = maximum_hole_radius2(g) 或 maximum_hole_radius3(g)
+    gamma_value = np.math.gamma((m / 2) + 1)
+    denominator = ((gamma_value / np.pi ** (m / 2)) * (1 / n)) ** (1 / m)
+    """
+    m = 2
+    n = num_selected
+    max_radius = maximum_hole_radius2(position)
+    # max_radius = maximum_hole_radius3(position)
+    gamma_value = np.math.gamma((m / 2) + 1)
+    denominator = ((gamma_value / np.pi ** (m / 2)) * (1 / n)) ** (1 / m)
+    print('max_radius',max_radius)
+    print('Rst',denominator)
+    if max_radius > 0:
+        DS = denominator / max_radius
+    else:
+        DS = denominator / 0.5
+    return DS
+
+def DS2(g,num_selected):
+    """
+    max_radius = maximum_hole_radius(g)
+    gamma_value = np.math.gamma((m / 2) + 1)
+    denominator = ((gamma_value / np.pi ** (m / 2)) * (1 / n)) ** (1 / m)
+    """
+    m = 2
+    n = num_selected
+    max_radius = maximum_hole_radius(g)
+    gamma_value = np.math.gamma((m / 2) + 1)
+    denominator = ((gamma_value / np.pi ** (m / 2)) * (1 / n)) ** (1 / m)
+    print('max_radius',max_radius)
+    print('Rst',denominator)
+    if max_radius > 0:
+        DS = denominator / max_radius
+    else:
+        DS = denominator / 0.01
+    return DS
