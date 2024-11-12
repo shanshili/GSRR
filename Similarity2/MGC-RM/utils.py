@@ -62,6 +62,7 @@ def get_h_hop_neighbors(G, node, hop=1):
     return output, output[hop]
 
 
+
 def communication_energy_loss(G, node, neighbors, E_0, E_elec=600, alpha=3, beta=120, bit=1000):
     # Neighbor_number = len(neighbors)
     Energy = E_0
@@ -170,16 +171,64 @@ def MSE_node_feature(g,node):
     loss_fun = nn.MSELoss()
     loss_history = []
     first_node_encode = []
+    # 节点特征:2000->1
     with torch.no_grad():
         encoded, decoded = autoencoder(data)
         loss = loss_fun(decoded, data)
         loss_history.append(loss.item())
         # print(encoded)
         # print(loss)
+        """
+        选择重要性第一名节点的特征
+        """
         first_node_encode.append(encoded[node].item())
         # print(' loss: ' + str(loss.item()))
         # print(' encode: ' + str(first_node_encode))
     return first_node_encode
+
+
+# 填充低维向量
+def pad_vectors(low_dim_vectors, node_lists, max_dim = 450):
+    padded_vectors = torch.zeros(max_dim)
+    i = 0
+    for index in node_lists:
+        # print(index)
+        padded_vectors[index] = low_dim_vectors[i]
+        i =i+1
+    # print(padded_vectors)
+    return padded_vectors
+
+def MSE_all_node_feature(encode_o,g,node_list):
+    topological_features = topological_features_construct(g)
+    data = np.array(topological_features)
+    norm_scalar = MinMaxScaler()
+    data = np.transpose(norm_scalar.fit_transform(data))
+    data = torch.tensor(data, dtype=torch.float32)
+    model_path = './model_save/autoencoder.pth'
+    autoencoder = AutoEncoder()
+    autoencoder = torch.load(model_path)
+    autoencoder.eval()
+    loss_fun = nn.MSELoss()
+    loss_history = []
+    # 节点特征:2000->1
+    with torch.no_grad():
+        encoded, decoded = autoencoder(data)
+        loss = loss_fun(decoded, data)
+        loss_history.append(loss.item())
+        node_encode = encoded.clone().detach()
+        # print(encoded)
+        # print(loss)
+        # print(' loss: ' + str(loss.item()))
+        # print(' encode: ' + str(first_node_encode))
+    filtered_list = list(filter(lambda x: x != [], node_list))
+    # print(node_encode,'\n',filtered_list)
+    padded_vectors = pad_vectors(node_encode, filtered_list)
+
+
+    mse = mean_squared_error(encode_o,padded_vectors)
+    return mse
+
+
 
 def mean_squared_error(y_true, y_pred):
     """
@@ -197,6 +246,10 @@ def mean_squared_error(y_true, y_pred):
     squared_errors = (y_true - y_pred) ** 2
     # 计算均方误差
     mse = np.mean(squared_errors)
+    # 计算均方根误差（RMSE）
+    # mse2 = np.sqrt(mse)
+    # 计算欧几里得距离
+    # euclidean_distance = np.linalg.norm(y_true - y_pred)
     return mse
 
 
@@ -456,6 +509,7 @@ def DS3(position,num_selected):
 
 def DS2(g,num_selected):
     """
+    不包含只有一个点的情况
     max_radius = maximum_hole_radius(g)
     gamma_value = np.math.gamma((m / 2) + 1)
     denominator = ((gamma_value / np.pi ** (m / 2)) * (1 / n)) ** (1 / m)
@@ -465,10 +519,10 @@ def DS2(g,num_selected):
     max_radius = maximum_hole_radius(g)
     gamma_value = np.math.gamma((m / 2) + 1)
     denominator = ((gamma_value / np.pi ** (m / 2)) * (1 / n)) ** (1 / m)
-    print('max_radius',max_radius)
-    print('Rst',denominator)
+    # print('max_radius',max_radius)
+    # print('Rst',denominator)
     if max_radius > 0:
         DS = denominator / max_radius
     else:
-        DS = denominator / 0.01
+        DS = denominator / 0.5   # 值不合适的话，不能取第一个点
     return DS
