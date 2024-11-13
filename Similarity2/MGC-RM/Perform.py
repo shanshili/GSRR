@@ -6,7 +6,7 @@ import networkx as nx
 from utils import (find_value_according_index_list,
                    natural_connectivity2,network_life,
                    MSE_node_feature,mean_squared_error,DS2,DS3,
-                   MSE_all_node_feature)
+                   MSE_all_node_feature,calculate_aec)
 from GraphConstruct2 import location_graph
 from sklearn.neighbors import NearestNeighbors
 from model import AutoEncoder
@@ -56,6 +56,7 @@ A = [[] for _ in range(len(node_list))]
 natural_conn = [None] * (int(len(node_list)) + 1)
 res_energy_avg = [None] * (int(len(node_list)) + 1)
 communicate_circle = [None] * (int(len(node_list)) + 1)
+AEC_2 = [None] * (int(len(node_list)) + 1)
 mse = [None] * (int(len(node_list)) + 1)
 mse_all_node = [None] * (int(len(node_list)) + 1)
 Ds = [None] * (int(len(node_list)) + 1)
@@ -64,23 +65,25 @@ i = 0 # 采样计数
 """
 小图密集采样显示
 """
-for select_node in range(1,150,1):
+for select_node in range(0,100,1):
     x[i] = select_node+1 # 已选择节点数目
     selected_node[i] = node_list[:select_node+1]
     fea_list = find_value_according_index_list(fea_o, selected_node[i])
     location_list = find_value_according_index_list(location, selected_node[i])
     if x[i] > 1:
         g[i],A[i] = location_graph(location_list)
+
         natural_conn[i] = natural_connectivity2(g[i])
         # communicate_circle[i],res_energy_avg[i] = network_life(g[i])
+        AEC_2[i] = calculate_aec(g[i],location_list)
         encode = MSE_node_feature(g[i],0)
         mse[i] = mean_squared_error(encode_o,encode)
-        mse_all_node[i] = MSE_all_node_feature(encode_o,g[i],selected_node[i])
+        # mse_all_node[i] = MSE_all_node_feature(encode_o,g[i],selected_node[i])
         # Ds[i] = DS(np.array(location_list)[:, 0],np.array(location_list)[:, 1], select_node + 1)
         Ds[i] = DS2(g[i], select_node + 1)
         # Ds[i] = DS3(location_list, select_node + 1)
         # print(mse[i])
-        print(mse_all_node[i])
+        # print(mse_all_node[i])
         # print(communicate_circle[i],res_energy_avg[i])
     else:  # 仅选择一个节点时
         test = NearestNeighbors(radius=0.05)
@@ -88,38 +91,45 @@ for select_node in range(1,150,1):
         A[i] = np.ones((1, 1))
         g[i] = nx.from_numpy_array(A[i])
         A[i] = nx.to_pandas_adjacency(g[i])
+
+        natural_conn[i] = natural_connectivity2(g[i])
+        # communicate_circle[i], res_energy_avg[i] = network_life(g[i])
+        AEC_2[i] = calculate_aec(g[i], location_list)
         encode = MSE_node_feature(g[i],0)
         mse[i] = mean_squared_error(encode_o, encode)
-        mse_all_node[i] = MSE_all_node_feature(encode_o,g[i],selected_node[i])
+        # mse_all_node[i] = MSE_all_node_feature(encode_o,g[i],selected_node[i])
         # print(np.array(location_list)[:, 0])
         # Ds[i] = DS(np.array(location_list)[:, 0],np.array(location_list)[:, 1], select_node + 1)
         Ds[i] = DS2(g[i], select_node + 1)
         # Ds[i] = DS3(location_list, select_node + 1)
+
         # print(mse[i])
-        print(mse_all_node[i])
+        # print(mse_all_node[i])
         # nx.draw(g[i], pos=location_list, with_labels=True, alpha=0.4, node_size=10, font_size=5)
     print(x[i])
     i = i+1  # 采样计数
 """
 大图粗略采样显示
 """
-for select_node in range(151,int(len(node_list))+1,10):
+for select_node in range(101,int(len(node_list))+1,5):
     x[i] = select_node+1
     selected_node[i] = node_list[:select_node+1]
     fea_list = find_value_according_index_list(fea_o, selected_node[i])
     location_list = find_value_according_index_list(location, selected_node[i])
     g[i],A[i] = location_graph(location_list)
-    natural_conn[i] = natural_connectivity2(g[i])
+
+    # natural_conn[i] = natural_connectivity2(g[i])
     # communicate_circle[i], res_energy_avg[i] = network_life(g[i])
-    encode = MSE_node_feature(g[i],0)
-    mse[i] = mean_squared_error(encode_o, encode)
-    mse_all_node[i] = MSE_all_node_feature(encode_o, g[i], selected_node[i])
+    # AEC_2[i] = calculate_aec(g[i], location_list)
+    # encode = MSE_node_feature(g[i],0)
+    # mse[i] = mean_squared_error(encode_o, encode)
+    # mse_all_node[i] = MSE_all_node_feature(encode_o, g[i], selected_node[i])
     # Ds[i] = DS(np.array(location_list)[:, 0],np.array(location_list)[:, 1], select_node + 1)
-    Ds[i] = DS2(g[i], select_node + 1)
+    # Ds[i] = DS2(g[i], select_node + 1)
     # Ds[i] = DS3(location_list, select_node + 1)
     # print(mse[i])
-    print(mse_all_node[i])
-    print(x[i])
+    # print(mse_all_node[i])
+    # print(x[i])
     i = i+1
 
 ## print(natural_conn)
@@ -131,7 +141,7 @@ for select_node in range(151,int(len(node_list))+1,10):
 ##  max_natural_conn = natural_conn.index(1.596723933094875)+1
 # print(max_natural_conn)
 # print(x)
-
+# print(mse)
 
 """
 多个节点特征怎么汇总
@@ -139,58 +149,64 @@ for select_node in range(151,int(len(node_list))+1,10):
 """
 
 
-# # 示例数据
-# y_true = [3, -0.5, 2, 7]
-# y_pred = [2.5, 0.0, 2, 8]
-#
-# # 计算 MSE
-# mse = mean_squared_error(y_true, y_pred)
-# print(f"Mean Squared Error: {mse}")
 
 
 
-
-fig, conn = plt.subplots(figsize=(6, 4))
+fig, conn = plt.subplots(figsize=(8, 4))
 # AEC = conn.twinx()
 # cc = conn.twinx()
 mse_ax = conn.twinx()
+aec_2 = conn.twinx()
 ds_ax = conn.twinx()
-mse_all_ax = conn.twinx()
+# mse_all_ax = conn.twinx()
 
 # cc.spines['right'].set_position(('outward', 40))
-ds_ax.spines['right'].set_position(('outward', 40))
-mse_all_ax.spines['right'].set_position(('outward', 80))
+# mse_ax.spines['right'].set_position(('outward', 40))
+aec_2.spines['right'].set_position(('outward', 30))
+ds_ax.spines['right'].set_position(('outward', 75))
+# mse_all_ax.spines['right'].set_position(('outward', 80))
 
-## ax.axvline(max_natural_conn, c='#E89B9E', ls='--')
-# ax.axhline(1.596723933094875, c='#E89B9E', ls='--')
 
-line_CONN= conn.plot(x, natural_conn, marker = '.',markerfacecolor='white', label='Natural Connectivity', color='#d92523')
+line_CONN= conn.plot(x, natural_conn, marker = '.',markerfacecolor='white', label='NC', color='#d92523')
 # line_AEC = AEC.plot(x, res_energy_avg, markerfacecolor='white', label='res_energy_avg', color='#2e7ebb')
 # line_cc = cc.plot(x, communicate_circle,marker = '.', markerfacecolor='white', label='communicate_circle', color='#00FF00')
-line_mse = mse_ax.plot(x, mse,marker = '.', markerfacecolor='white', label='mse', color='#FFA500')
-line_ds = ds_ax.plot(x, Ds,marker = '.', markerfacecolor='white', label='ds', color='#00FFFF')
-line_mse_all = mse_all_ax.plot(x, mse_all_node,marker = '.', markerfacecolor='white', label='mse_all', color='#FF1493')
+line_AEC2 = aec_2.plot(x, AEC_2, marker = '.',markerfacecolor='white', label='AEC', color='#2e7ebb')
+line_mse = mse_ax.plot(x, mse,marker = '.',markerfacecolor='white', label='MSE', color='#FFA500')
+line_ds = ds_ax.plot(x, Ds,marker = '.',markerfacecolor='white', label='Ds', color='#00FFFF')
+# line_mse_all = mse_all_ax.plot(x, mse_all_node,marker = '.', markerfacecolor='white', label='mse_all', color='#FF1493')
 
+# conn.axvline(6, c='#E89B9E', ls='--')
+# plt.text(6,0,'6+')
+# conn.axvline(30, c='#6495ED', ls='--')
+# plt.text(30,0,'30-')
+# conn.axvline(12, c='#E89B9E', ls='--')
+# plt.text(12,0,'12+')
+# conn.axvline(24, c='#00FF00', ls='--')
+# plt.text(24,0,'24')
+conn.axvline(14, c='#00FF00', ls='--')
+plt.text(14,0,'14')
 
-conn.set_ylabel('Natural Connectivity')
+conn.set_ylabel('NC')
 # AEC.set_ylabel('res_energy_avg')
 # cc.set_ylabel('communicate_circle')
-mse_ax.set_ylabel('mse')
+aec_2.set_ylabel('AEC')
+mse_ax.set_ylabel('MSE')
 ds_ax.set_ylabel('Ds')
-mse_all_ax.set_ylabel(' mse2')
+# mse_all_ax.set_ylabel(' mse2')
 
-plt.title('Reference indicators')
 
 # 设置坐标轴名
 conn.set_xlabel('Number of nodes')
+plt.title('Reference indicators')
+
 
 # 设置图例
-lines = line_CONN +  line_ds + line_mse + line_mse_all
+lines =  line_CONN+line_mse+line_AEC2+line_ds
 labels = [l.get_label() for l in lines]
-conn.legend(lines, labels, loc='upper right')
+conn.legend(lines, labels, loc='right')
 # 统一两个 y 轴的比例
 # conn.set_ylim(0, 1.7)
 # AEC.set_ylim(0, 1.7)
-plt.savefig('.\Reference indicators\mse_all2'+'.svg', format='svg',dpi=600)
+plt.savefig('.\Reference indicators\select-indicators3'+'.svg', format='svg',dpi=600)
 plt.show()
 

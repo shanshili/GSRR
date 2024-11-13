@@ -27,7 +27,6 @@ def natural_connectivity(G):
     n_c = np.log(adj_spec_exp_sum / adj_spec.shape)
     return n_c
 
-
 def natural_connectivity2(G):
     # 构建拉普拉斯矩阵
     L = nx.laplacian_matrix(G).toarray()
@@ -43,6 +42,8 @@ def natural_connectivity2(G):
     log_sum = np.sum(np.log(non_zero_eigenvalues))
     natural_conn = log_sum / n
     return natural_conn
+
+
 
 def get_h_hop_neighbors(G, node, hop=1):
     '''
@@ -61,8 +62,6 @@ def get_h_hop_neighbors(G, node, hop=1):
         nodes = output[i]
     return output, output[hop]
 
-
-
 def communication_energy_loss(G, node, neighbors, E_0, E_elec=600, alpha=3, beta=120, bit=1000):
     # Neighbor_number = len(neighbors)
     Energy = E_0
@@ -72,9 +71,12 @@ def communication_energy_loss(G, node, neighbors, E_0, E_elec=600, alpha=3, beta
     return Energy
 
 def network_life(G):
+    """
+    至少2个节点
+    """
     n = G.number_of_nodes()
     # 初始能量
-    energy_loss = [20] * nx.number_of_nodes(G)
+    energy_loss = [6] * nx.number_of_nodes(G)  ### 应该是节点初始能量
     res_energy_avg = 0
     i = 0
     """
@@ -87,31 +89,33 @@ def network_life(G):
         # 通信轮次
         for i in range(100000):
             # 节点
-            for j in range(n):
+            for j in range(n): # 单个节点的剩余能量
                 # 找到通信范围
                 neighbor_dict, neighbor_list = get_h_hop_neighbors(G, j, radius)
-                # 计算剩余能量
+                # 计算单个节点的剩余能量
                 node_energy_loss = communication_energy_loss(G, j, neighbor_list, energy_loss[j])
-                energy_loss[j] = node_energy_loss
+                energy_loss[j] = node_energy_loss                                              #### 逻辑有问题，每一轮次对能量的计算有问题
                 # print(j)
             # print(energy_loss)
             # energy_collect.append(energy_loss.copy())  # 使用浅拷贝避免覆盖
 
+            # 轮到某节点通信时没有能量了
             if any(v <= 0 for v in energy_loss):  # 判断列表中是否有小于0的数
                 rest_energy = [u for u in energy_loss if u > 0]  # 删除小于0的数
+                # 最后一个轮次节点消耗能量的均值
                 res_energy_avg = sum(rest_energy) / n
                 # print('网络寿命为：{}'.format(i + 1))
                 break
         # energy_collect = np.array(energy_collect)
-        print('i',i)
+        # print('i',i)
 
     except nx.NetworkXError as e:  # 非连通图
         # 获取所有连通子图
         connected_components = list(nx.connected_components(G))
         # 计算连通子图的个数
         num_connected_components = len(connected_components)
-        print('connected: ',n)
-        print('connected_components: ', num_connected_components)
+        # print('connected: ',n)
+        # print('connected_components: ', num_connected_components)
         # 计算每个连通子图的半径
         radii = []
         ii = [[] for _ in range(num_connected_components)]
@@ -148,15 +152,114 @@ def network_life(G):
             # print('res_energy_avg_sub',res_energy_avg_sub)
         i = max(ii)
         res_energy_avg = sum(res_energy_avg_sub)/len(res_energy_avg_sub)
-        print(ii)
-        print(i)
-        print(res_energy_avg_sub)
-        print(res_energy_avg)
+        # print(ii)
+        # print(i)
+        # print(res_energy_avg_sub)
+        # print(res_energy_avg)
             # energy_collect = np.array(energy_collect)
     # print('i',i + 1)
     # ('res_energy_avg_sub', res_energy_avg)
 
     return i + 1, res_energy_avg
+
+
+
+
+def calculate_etr(position,Eelec = 600, beta = 120, alpha = 3, bit=1000):
+    """
+    计算单次通信中的发送能耗.
+    参数:
+    Eelec : float
+        单位信息的电子损耗.
+    beta : float
+        功放损失系数.
+    alpha : float
+        传播衰减指数.
+    distance : float
+        通信距离.
+    返回:
+    float: 发送能耗.
+    """
+    etr = 2*(Eelec + beta * math.pow(position, alpha))* 1e-9 * bit
+    return etr
+
+def calculate_network_lifetime(g, position,E0,f = 10, l = 1000):
+    """
+    # 没有进一步详细写代码，公式上来看是AEC的倒数
+    计算网络寿命.
+    参数:
+    E0 : float
+        每个传感器节点的初始能量 (焦耳).
+    E_tx : float
+        发送能耗 (nJ/比特).
+    E_rx : float
+        接收能耗 (nJ/比特).
+    f : float
+        每个节点的数据传输频率 (次/秒).
+    l : int
+        每个数据包的大小 (比特).
+    返回:
+    float: 网络寿命 (秒).
+    """
+    # 计算每个节点的总能耗
+    E_tr = calculate_etr()
+    E_total = f * l * E_tr * 1e-9  # 将 nJ 转换为 J
+    # 计算网络寿命
+    L = E0 / E_total
+    return L
+
+def calculate_aec(g, position):
+    """
+    计算平均能量消耗 (AEC).
+    参数:
+    N : int
+        网络中的传感器节点数量.
+    E0 : float
+        每个传感器节点的初始能量.
+    L : int
+        网络寿命.
+    ET : list of float
+        每个传感器节点的发送能耗列表.
+    ER : list of float
+        每个传感器节点的接收能耗列表.
+    返回:
+    float: 平均能量消耗 (AEC).
+    """
+    n = g.number_of_nodes()
+    k = 10
+    E_tr = [[] for _ in range(n)]
+    E_tr_j = [0 for _ in range(k)]
+    distance_matrix = squareform(pdist(position))
+    # print(distance_matrix)
+    tree = cKDTree(position)
+    _, indices = tree.query(position, k=k + 1)  # k+1 是因为最近的一个点是自己
+    # print(indices[0][1:])
+    for i in range(n):
+        E_tr_j[0] = 0
+        m = 0
+        if n < k:
+            for j in range(i+1,n):
+                if distance_matrix[i, j-1] < 1:
+                    E_tr_j[m] = calculate_etr(distance_matrix[i, j-1])
+                else:
+                    E_tr_j[m] = 0
+                m += 1
+
+        else:
+            for j in indices[i][1:]:
+                if distance_matrix[i, j-1] < 1:
+                    E_tr_j[m] = calculate_etr(distance_matrix[i, j-1])
+                else:
+                    E_tr_j[m] = 0
+                m +=1
+        # (E_tr_j)
+        E_tr[i] = sum(E_tr_j)
+    aec = sum(E_tr) / n # * f = 10, l = 1000
+    # print('sum(E_tr)',sum(E_tr))
+    return aec
+
+
+
 
 def MSE_node_feature(g,node):
     topological_features = topological_features_construct(g)
@@ -185,7 +288,6 @@ def MSE_node_feature(g,node):
         # print(' loss: ' + str(loss.item()))
         # print(' encode: ' + str(first_node_encode))
     return first_node_encode
-
 
 # 填充低维向量
 def pad_vectors(low_dim_vectors, node_lists, max_dim = 450):
@@ -228,8 +330,6 @@ def MSE_all_node_feature(encode_o,g,node_list):
     mse = mean_squared_error(encode_o,padded_vectors)
     return mse
 
-
-
 def mean_squared_error(y_true, y_pred):
     """
     计算均方误差 (MSE)
@@ -251,115 +351,6 @@ def mean_squared_error(y_true, y_pred):
     # 计算欧几里得距离
     # euclidean_distance = np.linalg.norm(y_true - y_pred)
     return mse
-
-
-
-def f_distance(pos_i, pos_j):
-    # f坐标(k=1:横坐标; k=2:纵坐标)
-    position_fi = []
-    position_fj = []
-    center_f = []
-    for k in range(2):
-        if abs(pos_i[k] - pos_j[k]) >= 0.5:
-            pos_fi = pos_i[k]
-            pos_fj = pos_j[k]
-        elif abs(pos_i[k] - pos_j[k]) < 0.5 and pos_i[k] >= pos_j[k]:
-            pos_fi = pos_i[k]
-            pos_fj = pos_j[k] + 1
-        elif abs(pos_i[k] - pos_j[k]) < 0.5 and pos_i[k] < pos_j[k]:
-            pos_fi = pos_i[k] + 1
-            pos_fj = pos_j[k]
-        position_fi.append(pos_fi)  # 第i个节点的坐标
-        position_fj.append(pos_fj)  # 第j个节点的坐标
-
-        # f中心(横坐标)
-        if (position_fi[k] + position_fj[k]) / 2 >= 1:
-            m_f = (position_fi[k] + position_fj[k]) / 2 - 1
-        else:
-            m_f = (position_fi[k] + position_fj[k]) / 2
-        center_f.append(m_f)  # f中心的坐标
-
-    # f距离
-    f_d = math.sqrt((position_fi[0] - position_fj[0]) ** 2 + (position_fi[1] - position_fj[1]) ** 2)
-
-    return position_fi, position_fj, center_f, f_d
-
-def g_distance(pos_i, pos_j):
-    # g坐标(k=1:横坐标; k=2:纵坐标)
-    position_gi = []
-    position_gj = []
-    center_g = []
-
-    for k in range(2):
-        if abs(pos_i[k] - pos_j[k]) <= 0.5:
-            pos_gi = pos_i[k]
-            pos_gj = pos_j[k]
-        elif abs(pos_i[k] - pos_j[k]) > 0.5 and pos_i[k] >= pos_j[k]:
-            pos_gi = pos_i[k]
-            pos_gj = pos_j[k] + 1
-        elif abs(pos_i[k] - pos_j[k]) > 0.5 and pos_i[k] < pos_j[k]:
-            pos_gi = pos_i[k] + 1
-            pos_gj = pos_j[k]
-        position_gi.append(pos_gi)  # 第i个节点的坐标
-        position_gj.append(pos_gj)  # 第j个节点的坐标
-
-        # g中心(横坐标)
-        if (position_gi[k] + position_gj[k]) / 2 >= 1:
-            m_g = (position_gi[k] + position_gj[k]) / 2 - 1
-        else:
-            m_g = (position_gi[k] + position_gj[k]) / 2
-        center_g.append(m_g)  # f中心的坐标
-
-    # g距离
-    g_d = math.sqrt((position_gi[0] - position_gj[0]) ** 2 + (position_gi[1] - position_gj[1]) ** 2)
-
-    return position_gi, position_gj, center_g, g_d
-
-def DS(lon, lat, num_selected):
-    """
-    原始DS，归一化坐标
-    Rst = (2 / (math.pi * num_selected)) ** 0.5
-    g_distance，f_distance计算空洞半径
-    不包含前三个点，整体数值较小，运算较慢
-    """
-    # 区域压缩(最大最小值)
-    lon_max = np.max(lon)
-    lon_min = np.min(lon)
-    lat_max = np.max(lat)
-    lat_min = np.min(lat)
-    lon_n = (lon - lon_min) / (lon_max - lon_min)
-    lat_n = (lat - lat_min) / (lat_max - lat_min)
-
-    position = map(list, zip(lon_n, lat_n))  # 平面的，为了画图
-    pos = list(position)
-    # print(pos)
-
-    hole_radius_f = []
-    hole_radius_g = []
-    for i in range(num_selected):
-        for j in range(num_selected):
-            if i == j: continue
-            else:
-                position_fi, position_fj, center_f, f_d = f_distance(pos[i], pos[j])
-                position_gi, position_gj, center_g, g_d = g_distance(pos[i], pos[j])
-
-            for k in range(num_selected):
-                position_fmi, position_fmj, center_fm, fm_d = f_distance(center_f, pos[k])
-                position_gmi, position_gmj, center_gm, gm_d = g_distance(center_g, pos[k])
-
-                if fm_d >= f_d / 2 and gm_d >= f_d / 2: hole_radius_f.append(f_d / 2)
-                if fm_d >= g_d / 2 and gm_d >= g_d / 2: hole_radius_g.append(g_d / 2)
-
-    # print(hole_radius_f,hole_radius_g)
-    hole_radius = hole_radius_f + hole_radius_g
-    # print(hole_radius)
-    r_min = min(hole_radius)
-    r_max = max(hole_radius)
-    # D = r_min / r_max
-
-    Rst = (2 / (math.pi * num_selected)) ** 0.5
-
-    return Rst / r_max
 
 
 
@@ -449,6 +440,9 @@ def maximum_hole_radius3(positions, k=4):
     重新构图
     考虑物理距离，考虑连接的邻居个数
     但是起始必须大于4个节点
+
+    构图时考虑物理距离没有太大意义，与KNN类似
+    计算最大半径时考虑物理距离也许有意义
     """
     # 构建图
     num_nodes = len(positions)
