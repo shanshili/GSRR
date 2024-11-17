@@ -38,7 +38,6 @@ class MFC_RMF(nn.Module):
         self.match = matching(output_size, args.match_size)
         self.mlp = MLP(args.match_size)
 
-
     # 自表示操作：输出自表示特征
     def self_representation(self, x, edge_index):
         h_self = self.gat(x, edge_index)

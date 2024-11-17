@@ -1,7 +1,6 @@
 import networkx as nx
 import numpy as np
 import math
-import numpy
 from GraphConstruct2 import topological_features_construct
 from model import AutoEncoder
 import torch
@@ -9,9 +8,13 @@ from sklearn.preprocessing import MinMaxScaler
 from torch import nn
 from scipy.spatial.distance import pdist, squareform
 from scipy.spatial import cKDTree
-import matplotlib.pyplot as plt
+from scipy.sparse import csgraph, diags
+from scipy.sparse.linalg import eigsh
 
 
+"""
+通过节点索引查找数据
+"""
 def find_value_according_index_list(aim_list, index_list):  # 索引转换 从排序索引找对应节点
     i = 0
     reslut_list = []
@@ -20,6 +23,11 @@ def find_value_according_index_list(aim_list, index_list):  # 索引转换 从�
         i = i + 1
     return reslut_list
 
+
+
+"""
+自然连通性
+"""
 def natural_connectivity(G):
     adj_spec = nx.adjacency_spectrum(G)
     adj_spec_exp = np.exp(adj_spec)
@@ -44,7 +52,9 @@ def natural_connectivity2(G):
     return natural_conn
 
 
-
+"""
+通信能量损失
+"""
 def get_h_hop_neighbors(G, node, hop=1):
     '''
     :param G: 图
@@ -164,7 +174,9 @@ def network_life(G):
 
 
 
-
+"""
+平均能量消耗
+"""
 def calculate_etr(position,Eelec = 600, beta = 120, alpha = 3, bit=1000):
     """
     计算单次通信中的发送能耗.
@@ -260,7 +272,9 @@ def calculate_aec(g, position):
 
 
 
-
+"""
+单个节点MSE
+"""
 def MSE_node_feature(g,node):
     topological_features = topological_features_construct(g)
     data = np.array(topological_features)
@@ -289,6 +303,9 @@ def MSE_node_feature(g,node):
         # print(' encode: ' + str(first_node_encode))
     return first_node_encode
 
+"""
+图MSE
+"""
 # 填充低维向量
 def pad_vectors(low_dim_vectors, node_lists, max_dim = 450):
     padded_vectors = torch.zeros(max_dim)
@@ -300,7 +317,10 @@ def pad_vectors(low_dim_vectors, node_lists, max_dim = 450):
     # print(padded_vectors)
     return padded_vectors
 
-def MSE_all_node_feature(encode_o,g,node_list):
+def MSE_all_node_feature(g,node_list):
+    """
+    只对填充后的值做MSE,未对填充后的值进行汇聚
+    """
     topological_features = topological_features_construct(g)
     data = np.array(topological_features)
     norm_scalar = MinMaxScaler()
@@ -326,9 +346,7 @@ def MSE_all_node_feature(encode_o,g,node_list):
     # print(node_encode,'\n',filtered_list)
     padded_vectors = pad_vectors(node_encode, filtered_list)
 
-
-    mse = mean_squared_error(encode_o,padded_vectors)
-    return mse
+    return padded_vectors
 
 def mean_squared_error(y_true, y_pred):
     """
@@ -354,7 +372,9 @@ def mean_squared_error(y_true, y_pred):
 
 
 
-
+"""
+DS
+"""
 def find_holes(graph):
     # 使用 BFS 查找连通分量
     holes = list(nx.connected_components(graph))
@@ -520,3 +540,23 @@ def DS2(g,num_selected):
     else:
         DS = denominator / 0.5   # 值不合适的话，不能取第一个点
     return DS
+
+
+
+"""
+R_g
+"""
+def robustness_score(graph):
+    """Calculate the robustness metric Rg for a given graph."""
+    N = graph.number_of_nodes()
+    c = len(list(nx.connected_components(graph)))
+    # 构建拉普拉斯矩阵
+    laplacian = nx.laplacian_matrix(graph).toarray()
+    # 计算拉普拉斯矩阵的特征值
+    eigenvalues = np.linalg.eigvalsh(laplacian)
+    # 去掉零特征值
+    non_zero_eigvals = eigenvalues[eigenvalues > 1e-10]
+    sum_reciprocal_nonzero = np.sum(1 / non_zero_eigvals)
+    Rg = (2 / (N - 1)) * ((N - c) / sum_reciprocal_nonzero)
+    return Rg
+

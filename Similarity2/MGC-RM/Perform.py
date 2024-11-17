@@ -48,6 +48,8 @@ with open('WPR_result\_node_list_GP_75_node_450_data_2000.txt','r') as f:
 
 # G_0 中最重要节点的拓扑特征编码
 encode_o = MSE_node_feature(G_o,node_list[0])
+# padded_vectors = MSE_all_node_feature(G_o,node_list)
+# print(padded_vectors)
 # print(location[node_list[0]])
 
 selected_node = [[] for _ in range(len(node_list))]
@@ -76,9 +78,10 @@ for select_node in range(0,100,1):
         natural_conn[i] = natural_connectivity2(g[i])
         # communicate_circle[i],res_energy_avg[i] = network_life(g[i])
         AEC_2[i] = calculate_aec(g[i],location_list)
-        encode = MSE_node_feature(g[i],0)
-        mse[i] = mean_squared_error(encode_o,encode)
-        # mse_all_node[i] = MSE_all_node_feature(encode_o,g[i],selected_node[i])
+        # encode = MSE_node_feature(g[i],0)
+        # mse[i] = mean_squared_error(encode_o,encode)
+        # mse_all_node[i] = MSE_all_node_feature(g[i],selected_node[i])
+        # mse[i] = mean_squared_error(padded_vectors, mse_all_node[i])
         # Ds[i] = DS(np.array(location_list)[:, 0],np.array(location_list)[:, 1], select_node + 1)
         Ds[i] = DS2(g[i], select_node + 1)
         # Ds[i] = DS3(location_list, select_node + 1)
@@ -95,9 +98,10 @@ for select_node in range(0,100,1):
         natural_conn[i] = natural_connectivity2(g[i])
         # communicate_circle[i], res_energy_avg[i] = network_life(g[i])
         AEC_2[i] = calculate_aec(g[i], location_list)
-        encode = MSE_node_feature(g[i],0)
-        mse[i] = mean_squared_error(encode_o, encode)
-        # mse_all_node[i] = MSE_all_node_feature(encode_o,g[i],selected_node[i])
+        # encode = MSE_node_feature(g[i],0)
+        # mse[i] = mean_squared_error(encode_o,encode)
+        # mse_all_node[i] = MSE_all_node_feature(g[i], selected_node[i])
+        # mse[i] = mean_squared_error(padded_vectors, mse_all_node[i])
         # print(np.array(location_list)[:, 0])
         # Ds[i] = DS(np.array(location_list)[:, 0],np.array(location_list)[:, 1], select_node + 1)
         Ds[i] = DS2(g[i], select_node + 1)
@@ -122,8 +126,9 @@ for select_node in range(101,int(len(node_list))+1,5):
     # communicate_circle[i], res_energy_avg[i] = network_life(g[i])
     # AEC_2[i] = calculate_aec(g[i], location_list)
     # encode = MSE_node_feature(g[i],0)
-    # mse[i] = mean_squared_error(encode_o, encode)
-    # mse_all_node[i] = MSE_all_node_feature(encode_o, g[i], selected_node[i])
+    # mse[i] = mean_squared_error(encode_o,encode)
+    # mse_all_node[i] = MSE_all_node_feature(g[i], selected_node[i])
+    # mse[i] = mean_squared_error(padded_vectors, mse_all_node[i])
     # Ds[i] = DS(np.array(location_list)[:, 0],np.array(location_list)[:, 1], select_node + 1)
     # Ds[i] = DS2(g[i], select_node + 1)
     # Ds[i] = DS3(location_list, select_node + 1)
@@ -171,7 +176,7 @@ line_CONN= conn.plot(x, natural_conn, marker = '.',markerfacecolor='white', labe
 # line_AEC = AEC.plot(x, res_energy_avg, markerfacecolor='white', label='res_energy_avg', color='#2e7ebb')
 # line_cc = cc.plot(x, communicate_circle,marker = '.', markerfacecolor='white', label='communicate_circle', color='#00FF00')
 line_AEC2 = aec_2.plot(x, AEC_2, marker = '.',markerfacecolor='white', label='AEC', color='#2e7ebb')
-line_mse = mse_ax.plot(x, mse,marker = '.',markerfacecolor='white', label='MSE', color='#FFA500')
+# line_mse = mse_ax.plot(x, mse,marker = '.',markerfacecolor='white', label='MSE', color='#FFA500')
 line_ds = ds_ax.plot(x, Ds,marker = '.',markerfacecolor='white', label='Ds', color='#00FFFF')
 # line_mse_all = mse_all_ax.plot(x, mse_all_node,marker = '.', markerfacecolor='white', label='mse_all', color='#FF1493')
 
@@ -190,7 +195,7 @@ conn.set_ylabel('NC')
 # AEC.set_ylabel('res_energy_avg')
 # cc.set_ylabel('communicate_circle')
 aec_2.set_ylabel('AEC')
-mse_ax.set_ylabel('MSE')
+# mse_ax.set_ylabel('MSE')
 ds_ax.set_ylabel('Ds')
 # mse_all_ax.set_ylabel(' mse2')
 
@@ -201,12 +206,12 @@ plt.title('Reference indicators')
 
 
 # 设置图例
-lines =  line_CONN+line_mse+line_AEC2+line_ds
+lines =  line_CONN+line_AEC2+line_ds
 labels = [l.get_label() for l in lines]
 conn.legend(lines, labels, loc='right')
 # 统一两个 y 轴的比例
 # conn.set_ylim(0, 1.7)
 # AEC.set_ylim(0, 1.7)
-plt.savefig('.\Reference indicators\select-indicators3'+'.svg', format='svg',dpi=600)
+plt.savefig('.\Reference indicators\select-indicators5'+'.svg', format='svg',dpi=600)
 plt.show()
 

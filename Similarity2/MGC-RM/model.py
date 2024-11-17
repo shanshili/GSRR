@@ -1,7 +1,8 @@
 import torch.nn
 from torch import nn
 import torch.nn.functional as F
-from torch_geometric.nn import GCNConv, GATConv
+from torch_geometric.nn import GCNConv, GATConv,SAGEConv
+import numpy as np
 
 
 
@@ -150,3 +151,138 @@ class ProjectionModel(nn.Module):
         x = self.fc1(x)
         x = self.relu(x)
         return x
+
+
+class ILGR(nn.Module):
+    def __init__(self,  in_channels, hidden_channels, out_channels, num_layers, args):
+        super(ILGR,self).__init__()
+        torch.manual_seed(1234)
+
+        # convs 和 attn_convs 分别存储每一层的 SAGEConv 和 GATConv 模块。
+        self.convs = torch.nn.ModuleList()
+        self.attn_convs = torch.nn.ModuleList()
+
+        # 第一层
+        self.convs.append(SAGEConv(in_channels, hidden_channels))
+        self.attn_convs.append(GATConv(hidden_channels, hidden_channels, heads=1, concat=False))
+
+        # 后续层
+        for _ in range(1, num_layers):
+            self.convs.append(SAGEConv(hidden_channels * 2, hidden_channels))
+            self.attn_convs.append(GATConv(hidden_channels * 2, hidden_channels, heads=1, concat=False))
+
+        self.out_layer = torch.nn.Linear(hidden_channels, out_channels)
+    def forward(self, x, R_g):
+        edge_index = np.array(list(R_g.edges)).T
+        # 初始化节点嵌入
+        x = torch.cat([x, torch.ones(x.size(0), 1)], dim=-1)
+
+        # 学习节点嵌入
+        for i in range(len(self.convs)):
+            # 计算邻域嵌入
+            h_N = self.attn_convs[i](x, edge_index)
+
+            # 更新节点嵌入
+            h_v = self.convs[i](x, edge_index)
+            if i > 0:
+                h_v = F.relu(torch.cat([x, h_v, h_N], dim=-1))
+            else:
+                h_v = F.relu(h_v)
+            x = h_v
+
+        # 最后一层线性变换
+        out = self.out_layer(h_v)
+        return out
+
+
+class AttentionLayer(nn.Module):
+    def __init__(self, input_dim, hidden_dim):
+        super(AttentionLayer, self).__init__()
+        self.W = nn.Linear(input_dim, hidden_dim, bias=False)
+        self.q = nn.Linear(hidden_dim, 1, bias=False)
+
+    def forward(self,neighbor_embeddings):
+        # print(neighbor_embeddings)
+        # print(F.relu(self.W(neighbor_embeddings)))
+        attention_scores = self.q(F.relu(self.W(neighbor_embeddings))).squeeze(-1)
+        attention_weights = F.softmax(attention_scores,dim=0)
+        print('attention_scores',attention_scores)
+        weighted_neighbor_embeddings = torch.sum(attention_weights.unsqueeze(-1) * neighbor_embeddings, dim=1)
+        return weighted_neighbor_embeddings
+
+class NodeEmbeddingModule(nn.Module):
+    def __init__(self, input_dim, hidden_dim, output_dim, num_layers,args):
+        super(NodeEmbeddingModule, self).__init__()
+        torch.manual_seed(1234)
+        self.args = args
+        self.layers = nn.ModuleList([
+            nn.Linear(input_dim//(2**i), hidden_dim//(2**i)) for i in range(num_layers)
+        ])
+        self.attention_layers = nn.ModuleList([
+            AttentionLayer(4, 1)
+        ])
+        self.output_layer = nn.Linear(hidden_dim, output_dim)
+
+    def forward(self, X_v, G):
+        h_v = torch.tensor( np.array(X_v) , dtype=torch.float32)  # 所有节点的初始特征
+        for l in range(len(self.layers)):   # 当前层
+            h_N_v = []    #邻居节点的特征
+            for v in range(len(X_v)):   # 遍历当前图中的每个节点
+                neighbors = list(G.neighbors(v))   # 获取节点v的邻居
+                print('neighbors',neighbors)
+                if not neighbors:  # 孤立节点
+                    h_N_v.append(torch.zeros_like(h_v[v]))
+                else:
+                    neighbor_embeddings = [h_v[i] for i in neighbors]
+                    neighbor_embeddings_tensor = torch.tensor(np.array(neighbor_embeddings), dtype=torch.float32)
+                    # print(neighbor_embeddings_tensor)
+                    # print(h_v[v].unsqueeze(0))
+                    h_N_v.append(self.attention_layers[l](neighbor_embeddings_tensor.T)) # 与上一层的h_v进行attention
+                    """
+                    h_v[v] 1*2000 
+                    neighbor_embeddings  neighbors*2000
+                    h_N_v 邻居特征 1*2000
+                    
+                    """
+            h_N_v = torch.stack(h_N_v)
+            h_v = F.relu(self.layers[l](torch.cat([h_v, h_N_v], dim=1)))
+        return self.output_layer(h_v)
+
+
+
+class RegressionModule(nn.Module):
+    def __init__(self, input_dim, hidden_dim, output_dim):
+        super(RegressionModule, self).__init__()
+        self.fc1 = nn.Linear(input_dim, hidden_dim)
+        self.fc2 = nn.Linear(hidden_dim, hidden_dim)
+        self.fc3 = nn.Linear(hidden_dim, output_dim)
+
+    def forward(self, x):
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x)
+        return x.squeeze()
+
+class ILGRModel(nn.Module):
+    def __init__(self, input_dim, hidden_dim, output_dim, num_layers,args):
+        super(ILGRModel, self).__init__()
+        self.embedding_module = NodeEmbeddingModule(input_dim, hidden_dim, output_dim, num_layers,args)
+        self.regression_module = RegressionModule(output_dim, hidden_dim, 1)
+
+    def forward(self, X_v, G):
+        embeddings = self.embedding_module(X_v, G)
+        scores = self.regression_module(embeddings)
+        print('scores',scores)
+        return scores
+
+# 定义损失函数
+def ranking_loss(scores, true_ranks):
+    loss = 0
+    for i in range(len(scores)):
+        for j in range(i + 1, len(scores)):
+            r_ij = true_ranks[i] - true_ranks[j]
+            y_hat_ij = scores[i] - scores[j]
+            f_r_ij = F.sigmoid(r_ij)
+            loss += -f_r_ij * torch.log(F.sigmoid(y_hat_ij)) - (1 - f_r_ij) * torch.log(1 - F.sigmoid(y_hat_ij))
+    return loss
+
