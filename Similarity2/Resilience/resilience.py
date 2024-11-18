@@ -9,6 +9,7 @@ from keras.src.ops import dtype
 from torch.optim import Adam
 import sys
 import matplotlib.pyplot as plt
+import time
 
 # 将外部包的路径添加到 sys.path
 sys.path.append('D:\Tjnu-p\ML-learning\similarity2\MGC-RM')
@@ -36,10 +37,10 @@ parser = argparse.ArgumentParser(
     description="train", formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
 parser.add_argument("--max_epoch", type=int, default=21)
-parser.add_argument("--lr", type=float, default=0.0001)
+parser.add_argument("--lr", type=float, default=0.001)
 parser.add_argument("--hidden_dim", default=1000, type=int)
 parser.add_argument("--output_dim", default=50, type=int)
-parser.add_argument("--num_layer", default=4, type=int)
+parser.add_argument("--num_layer", default=2, type=int)
 parser.add_argument("--weight_decay", type=int, default=1e-4)
 args = parser.parse_args()
 args.cuda = torch.cuda.is_available()
@@ -111,21 +112,22 @@ for i, (location, fea) in enumerate(zip(un_location_list, un_fea_list)):
 criticality_scores = np.argsort(np.array(R_Rg))
 # print('criticality_scores',criticality_scores)
 scores=[[] for _ in range(len(unselected_node))]
+loss_history = []
 # 训练过程
-for epoch in range(100):  # 假设训练100个epoch
+for epoch in range(args.max_epoch):  # 假设训练100个epoch
     for i, (location, fea) in enumerate(zip(un_location_list, un_fea_list)):
         location_list[select_node] = location
         fea_list[select_node] = fea
         ILGR_model.train()
-        optimizer.zero_grad()
         scores[i] = ILGR_model(fea_list, R_g[i])
     # print(len(scores))
     # print(type(scores))
     loss = ranking_loss(scores, R_Rg)
+    optimizer.zero_grad()
     loss.backward()
     optimizer.step()
-    if epoch % 10 == 0:
-        print(f"Epoch {epoch}, Loss: {loss.item()}")
+    loss_history.append(loss.item())
+    print('epoch:{}, loss:{}'.format(epoch, loss))
 
     # 测试
     # ILGR_model.eval()
@@ -133,4 +135,22 @@ for epoch in range(100):  # 假设训练100个epoch
     #     test_scores = ILGR_model(fea_list, R_g[i])
     #     print("Test Scores:", test_scores)
 
+fig = plt.figure()
+ax1 = fig.add_subplot(111)
+ax1.plot(range(len(loss_history)), loss_history)
+plt.ylabel('Loss')
+plt.xlabel('Epoch : {}'.format(args.max_epoch))
+plt.text(0, loss_history[0], str(format(loss_history[0],'.8f')))
+print(format(loss_history[(args.max_epoch - 1)],'.15f'))
+plt.text(round(args.max_epoch/10*9) , loss_history[(args.max_epoch - 1)], str(format(loss_history[(args.max_epoch - 1)],'.10f')),
+         horizontalalignment='left')
 
+# time stamp
+timestamp = time.time()
+localtime = time.localtime(timestamp)
+formatted_time = time.strftime('%Y%m%d_%H%M%S',localtime)
+
+# Save
+plt.savefig('./training_loss/_Training_Loss_epoch_' + str(args.max_epoch) + '_lr_'+ str(args.lr)+'_'+str(formatted_time)+'.svg', format='svg')
+plt.show()
+torch.save(ILGR_model, './model_save/_e_' + str(args.max_epoch) + '_l_'+ str(args.lr)+'_'+str(formatted_time)+'.pth')

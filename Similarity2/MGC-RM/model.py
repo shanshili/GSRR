@@ -314,7 +314,7 @@ def ranking_loss(scores, true_ranks):
             r_ij = true_ranks[i] - true_ranks[j]
             y_hat_ij = scores[i] - scores[j]
             f_r_ij = F.sigmoid(torch.tensor(r_ij,dtype=torch.float32))
-            print(f_r_ij)
+            # print(f_r_ij)
             loss += -f_r_ij * torch.log(F.sigmoid(y_hat_ij)) - (1 - f_r_ij) * torch.log(1 - F.sigmoid(y_hat_ij))
     return loss
 
