@@ -36,7 +36,7 @@ rcParams.update(config)
 parser = argparse.ArgumentParser(
     description="train", formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
-parser.add_argument("--max_epoch", type=int, default=200)
+parser.add_argument("--max_epoch", type=int, default=500)
 parser.add_argument("--lr", type=float, default=0.0001)
 parser.add_argument("--hidden_dim", default=1000, type=int)
 parser.add_argument("--output_dim", default=50, type=int)
@@ -141,6 +141,7 @@ ax1 = fig.add_subplot(111)
 ax1.plot(range(len(loss_history)), loss_history)
 plt.ylabel('Loss')
 plt.xlabel('Epoch : {}'.format(args.max_epoch))
+plt.title('Training Loss: epoch' + str(args.max_epoch)+' lr'+ str(args.lr))
 plt.text(0, loss_history[0], str(format(loss_history[0],'.8f')))
 print(format(loss_history[(args.max_epoch - 1)],'.15f'))
 plt.text(round(args.max_epoch/10*9) , loss_history[(args.max_epoch - 1)], str(format(loss_history[(args.max_epoch - 1)],'.10f')),
