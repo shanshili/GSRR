@@ -8,8 +8,6 @@ from sklearn.preprocessing import MinMaxScaler
 from torch import nn
 from scipy.spatial.distance import pdist, squareform
 from scipy.spatial import cKDTree
-from scipy.sparse import csgraph, diags
-from scipy.sparse.linalg import eigsh
 
 
 """

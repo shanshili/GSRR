@@ -1,8 +1,11 @@
 import torch
+import os
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 import torch.nn as nn
 import argparse
 import numpy as np
 import networkx as nx
+from keras.src.ops import dtype
 from torch.optim import Adam
 import sys
 import matplotlib.pyplot as plt
@@ -35,8 +38,8 @@ parser = argparse.ArgumentParser(
 parser.add_argument("--max_epoch", type=int, default=21)
 parser.add_argument("--lr", type=float, default=0.0001)
 parser.add_argument("--hidden_dim", default=1000, type=int)
-parser.add_argument("--output_dim", default=250, type=int)
-parser.add_argument("--num_layer", default=2, type=int)
+parser.add_argument("--output_dim", default=50, type=int)
+parser.add_argument("--num_layer", default=4, type=int)
 parser.add_argument("--weight_decay", type=int, default=1e-4)
 args = parser.parse_args()
 args.cuda = torch.cuda.is_available()
@@ -76,7 +79,7 @@ un_fea_list = find_value_according_index_list(fea_o, unselected_node)
 un_location_list = find_value_according_index_list(location, unselected_node)
 
 Rg_o = robustness_score(G)
-print(Rg_o)
+print('Rg_o',Rg_o)
 
 args.input_dim = data_num
 print('input_dim: ',args.input_dim)
@@ -107,21 +110,22 @@ for i, (location, fea) in enumerate(zip(un_location_list, un_fea_list)):
 # print('R_Rg',R_Rg)
 criticality_scores = np.argsort(np.array(R_Rg))
 # print('criticality_scores',criticality_scores)
-
-
-for i, (location, fea) in enumerate(zip(un_location_list, un_fea_list)):
-    location_list[select_node] = location
-    fea_list[select_node] = fea
-    # 训练过程
-    for epoch in range(100):  # 假设训练100个epoch
+scores=[[] for _ in range(len(unselected_node))]
+# 训练过程
+for epoch in range(100):  # 假设训练100个epoch
+    for i, (location, fea) in enumerate(zip(un_location_list, un_fea_list)):
+        location_list[select_node] = location
+        fea_list[select_node] = fea
         ILGR_model.train()
         optimizer.zero_grad()
-        scores = ILGR_model(fea_list, R_g[i])
-        loss = ranking_loss(scores, R_Rg[i])
-        loss.backward()
-        optimizer.step()
-        if epoch % 10 == 0:
-            print(f"Epoch {epoch}, Loss: {loss.item()}")
+        scores[i] = ILGR_model(fea_list, R_g[i])
+    # print(len(scores))
+    # print(type(scores))
+    loss = ranking_loss(scores, R_Rg)
+    loss.backward()
+    optimizer.step()
+    if epoch % 10 == 0:
+        print(f"Epoch {epoch}, Loss: {loss.item()}")
 
     # 测试
     # ILGR_model.eval()
