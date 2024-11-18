@@ -3,6 +3,7 @@ from torch import nn
 import torch.nn.functional as F
 from torch_geometric.nn import GCNConv, GATConv,SAGEConv
 import numpy as np
+from scipy.special import comb
 
 
 
@@ -314,7 +315,15 @@ def ranking_loss(scores, true_ranks):
             r_ij = true_ranks[i] - true_ranks[j]
             y_hat_ij = scores[i] - scores[j]
             f_r_ij = F.sigmoid(torch.tensor(r_ij,dtype=torch.float32))
-            # print(f_r_ij)
+            # print('r_ij',r_ij)
+            # print('y_hat_ij',y_hat_ij)
+            # print('f_r_ij',f_r_ij)
+            # print('f_y_hat_ij',F.sigmoid(y_hat_ij))
+            # print('log', torch.log(F.sigmoid(y_hat_ij)))
+            # print('loss: ', -f_r_ij * torch.log(F.sigmoid(y_hat_ij)) - (1 - f_r_ij) * torch.log(1 - F.sigmoid(y_hat_ij)))
             loss += -f_r_ij * torch.log(F.sigmoid(y_hat_ij)) - (1 - f_r_ij) * torch.log(1 - F.sigmoid(y_hat_ij))
-    return loss
+
+    # print('loss',loss)
+    # print('loss', loss/int(comb(len(scores), 2)))
+    return loss/int(comb(len(scores), 2))
 

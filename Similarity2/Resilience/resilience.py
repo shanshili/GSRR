@@ -36,8 +36,8 @@ rcParams.update(config)
 parser = argparse.ArgumentParser(
     description="train", formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
-parser.add_argument("--max_epoch", type=int, default=21)
-parser.add_argument("--lr", type=float, default=0.001)
+parser.add_argument("--max_epoch", type=int, default=200)
+parser.add_argument("--lr", type=float, default=0.0001)
 parser.add_argument("--hidden_dim", default=1000, type=int)
 parser.add_argument("--output_dim", default=50, type=int)
 parser.add_argument("--num_layer", default=2, type=int)
@@ -75,7 +75,7 @@ location = location_file['arr_0']
 selected_node  = wpr_rank[:select_node]
 fea_list = find_value_according_index_list(fea_o, selected_node)
 location_list = find_value_according_index_list(location, selected_node)
-unselected_node = wpr_rank[select_node+1:]
+unselected_node = wpr_rank[select_node+1:114]
 un_fea_list = find_value_according_index_list(fea_o, unselected_node)
 un_location_list = find_value_according_index_list(location, unselected_node)
 
@@ -122,7 +122,8 @@ for epoch in range(args.max_epoch):  # 假设训练100个epoch
         scores[i] = ILGR_model(fea_list, R_g[i])
     # print(len(scores))
     # print(type(scores))
-    loss = ranking_loss(scores, R_Rg)
+    # loss = ranking_loss(scores, R_Rg)
+    loss = ranking_loss(scores, criticality_scores)
     optimizer.zero_grad()
     loss.backward()
     optimizer.step()
