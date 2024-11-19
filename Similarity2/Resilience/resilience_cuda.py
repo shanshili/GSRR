@@ -4,18 +4,20 @@ import argparse
 import numpy as np
 import torch
 import networkx as nx
+import torch.nn as nn
 # from keras.src.ops import dtype
 from torch.optim import Adam
 import sys
 import matplotlib.pyplot as plt
 import time
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 # 将外部包的路径添加到 sys.path
-sys.path.append('D:\lcr\ML-learning\similarity2\MGC-RM')
+sys.path.append('D:\Tjnu-p\ML-learning\similarity2\MGC-RM')
 # 现在可以导入外部包了
 from utils import find_value_according_index_list, robustness_score
-from model import (GAT,ranking_loss,AttentionLayer,NodeEmbeddingModule,
-                   RegressionModule,ILGRModel)
+from model_cuda import (GAT,ranking_loss,AttentionLayer,NodeEmbeddingModule,
+                   RegressionModule,ILGRModel,softsort)
 from GraphConstruct2 import location_graph
 
 from matplotlib import rcParams
@@ -35,8 +37,8 @@ rcParams.update(config)
 parser = argparse.ArgumentParser(
     description="train", formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
-parser.add_argument("--max_epoch", type=int, default=200)
-parser.add_argument("--lr", type=float, default=0.0001)
+parser.add_argument("--max_epoch", type=int, default=70)
+parser.add_argument("--lr", type=float, default=0.001)
 parser.add_argument("--hidden_dim", default=1000, type=int)
 parser.add_argument("--output_dim", default=50, type=int)
 parser.add_argument("--num_layer", default=2, type=int)
@@ -79,18 +81,19 @@ un_fea_list = find_value_according_index_list(fea_o, unselected_node)
 un_location_list = find_value_according_index_list(location, unselected_node)
 
 Rg_o = robustness_score(G)
-print('Rg_o',Rg_o)
+# print('Rg_o',Rg_o)
 
 args.input_dim = data_num
 print('input_dim: ',args.input_dim)
 ILGR_model = ILGRModel(args.input_dim, args.hidden_dim, args.output_dim, args.num_layer, args).to(device)
 optimizer = torch.optim.Adam(ILGR_model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-
+loss_CrossEntropy = nn.CrossEntropyLoss()
+scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=1, cooldown = 1,verbose=True)
 
 # 重新构图
 R_g = [[] for _ in range(len(unselected_node))]
 R_A = [[] for _ in range(len(unselected_node))]
-R_Rg = [[] for _ in range(len(unselected_node))]
+R_Rg = []
 location_list.append(None)
 fea_list.append(None)
 # print(location_list)
@@ -104,14 +107,22 @@ for i, (location, fea) in enumerate(zip(un_location_list, un_fea_list)):
     # nx.draw(R_g[i], pos=location_list,  alpha=0.8, node_size=8,
     #         width=0.6, edge_color='#BBD6D8', font_size=0)
     # plt.show()
-    R_Rg[i] = robustness_score(R_g[i])
+    R_Rg.append(torch.tensor(robustness_score(R_g[i])))
 
 fea_list_tensor = torch.tensor(np.array(fea_list), requires_grad=True).requires_grad_(True).to(device)
-R_Rg_tensor = torch.tensor(np.array(R_Rg), requires_grad=True).requires_grad_(True).to(device)
+R_Rg_tensor = torch.stack(R_Rg, dim=0).requires_grad_(True).to(device)
+
+
 # 对关键性评分进行排序
-# print('R_Rg',R_Rg)
-criticality_scores = torch.tensor(np.argsort(np.array(R_Rg))).to(device)
+# criticality_scores = torch.argsort(R_Rg_tensor).to(device)
+criticality_scores = softsort(R_Rg_tensor)
+criticality_scores_normal = (criticality_scores - torch.min(criticality_scores)) / (
+             torch.max(criticality_scores) - torch.min(criticality_scores))
+# criticality_scores_normal = (R_Rg_tensor - torch.min(R_Rg_tensor)) / (
+#             torch.max(R_Rg_tensor) - torch.min(R_Rg_tensor))
 # print('criticality_scores',criticality_scores)
+
+
 scores=[[] for _ in range(len(unselected_node))]
 loss_history = []
 # 训练过程
@@ -127,21 +138,42 @@ for epoch in range(args.max_epoch):  # 假设训练100个epoch
         tensors.append(scores[i])
     #print(tensors)
     scores_tensor = torch.stack(tensors, dim=0).requires_grad_(True).to(device)
-    #print(len(scores_tensor))
-    #print(criticality_scores.size())
+    scores_tensor_scores = softsort(scores_tensor)
+    # print(scores_tensor_scores)
+    # print(criticality_scores)
     # print(len(scores))
     # print(type(scores))
     #scores_tensor = torch.tensor(scores, requires_grad=True).requires_grad_(True).to(device)
     # print(scores_tensor.retain_grad())
     # print(scores_tensor.grad)
     optimizer.zero_grad()
-    loss = ranking_loss(scores_tensor, R_Rg_tensor)
+
+    # loss = ranking_loss(scores_tensor_scores, criticality_scores)
+    # loss = ranking_loss(scores_tensor, R_Rg_tensor)
     # loss = ranking_loss(scores_tensor, criticality_scores)
+
+    # CrossEntropy
+    scores_tensor_normal = (scores_tensor_scores - torch.min(scores_tensor_scores)) / (torch.max(scores_tensor_scores) - torch.min(scores_tensor_scores))
+    #scores_tensor_normal = (scores_tensor - torch.min(scores_tensor)) / (torch.max(scores_tensor) - torch.min(scores_tensor))
+    r_ij = []
+    y_hat_ij = []
+    x = 0
+    for i in range(len(scores_tensor_normal)-1):
+        for j in range(i + 1, len(scores_tensor_normal)-1):
+            # print(true_ranks[j],true_ranks[j])
+            r_ij.append(criticality_scores_normal[i] - criticality_scores_normal[j])
+            y_hat_ij.append(scores_tensor_normal[i] - scores_tensor_normal[j])
+            x+=x
+    r_ij_tensor = torch.stack(r_ij, dim=0).requires_grad_(True).to(device)
+    y_hat_ij_tensor = torch.stack(y_hat_ij, dim=0).requires_grad_(True).to(device)
+    loss = loss_CrossEntropy(y_hat_ij_tensor, r_ij_tensor)
+
     # print(scores_tensor.retain_grad())
     # print(scores_tensor.grad)
-    loss.backward()
+    loss.backward(retain_graph=True)
     optimizer.step()
     loss_history.append(loss.item())
+    scheduler.step(loss.item())
     print('epoch:{}, loss:{}'.format(epoch, loss))
 
     # 测试
@@ -155,6 +187,7 @@ ax1 = fig.add_subplot(111)
 ax1.plot(range(len(loss_history)), loss_history)
 plt.ylabel('Loss')
 plt.xlabel('Epoch : {}'.format(args.max_epoch))
+plt.title('Training Loss: epoch' + str(args.max_epoch)+' lr'+ str(args.lr)+' '+str(device))
 plt.text(0, loss_history[0], str(format(loss_history[0],'.8f')))
 print(format(loss_history[(args.max_epoch - 1)],'.15f'))
 plt.text(round(args.max_epoch/10*9) , loss_history[(args.max_epoch - 1)], str(format(loss_history[(args.max_epoch - 1)],'.10f')),
