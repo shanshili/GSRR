@@ -344,10 +344,30 @@ def ranking_loss(scores1, true_ranks1):
 
 
 def softsort(x, tau=0.1):
+    """
+    输入向量 x 的形状为 [n]，则 x.unsqueeze(1) 的形状为 [n, 1]，
+    x.unsqueeze(0) 的形状为 [1, n]。
+    通过广播机制，x.unsqueeze(1) - x.unsqueeze(0) 会生成一个形状为 [n, n] 的矩阵，
+    其中每个元素表示原向量中两个元素的差值。
+    """
     # 计算每对元素的差值
     pairwise_diff = x.unsqueeze(1) - x.unsqueeze(0)
+    """
+    计算这些差值的绝对值，以确保相似度矩阵中的所有元素都是非负的。
+    将这些绝对差值转换为相似度，我们取负值
+    (将较大的差值转换为较小的相似度值。因为较大的差值表示两个元素相距较远，相似度较低。)
+    并除以温度参数 tau。
+    (除以温度参数 tau 是为了调整相似度的平滑程度。较小的 tau 值会使相似度矩阵中的值差异更大，
+    从而更接近于硬排序；较大的 tau 值会使相似度矩阵中的值更加平滑，从而更接近于软排序。)
+    温度参数 tau 控制着相似度矩阵的平滑程度。
+    较小的 tau 值会使相似度矩阵更接近于硬排序（即 one-hot 编码），而较大的 tau 值会使相似度矩阵更加平滑
+    """
     # 计算相似度矩阵
     similarity_matrix = -pairwise_diff.abs() / tau
+    """
+    使用 softmax 函数将相似度矩阵转换为一个软排序矩阵。
+    这个矩阵的每一行表示一个元素在排序后的位置的概率分布。
+    """
     # 计算软排序矩阵
     soft_permutation_matrix = F.softmax(similarity_matrix, dim=1)
     # 计算软排序后的张量

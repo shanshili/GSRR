@@ -16,8 +16,7 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 sys.path.append('D:\Tjnu-p\ML-learning\similarity2\MGC-RM')
 # 现在可以导入外部包了
 from utils import find_value_according_index_list, robustness_score
-from model_cuda import (GAT,ranking_loss,AttentionLayer,NodeEmbeddingModule,
-                   RegressionModule,ILGRModel,softsort)
+from model_cuda import ILGRModel, softsort
 from GraphConstruct2 import location_graph
 
 from matplotlib import rcParams
@@ -32,10 +31,8 @@ config = {
             'axes.unicode_minus': False # 处理负号，即-号
          }
 rcParams.update(config)
-
-
 parser = argparse.ArgumentParser(
-    description="train", formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    description="eval", formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
 parser.add_argument("--max_epoch", type=int, default=300)
 parser.add_argument("--lr", type=float, default=1e-5)
@@ -76,42 +73,32 @@ location = location_file['arr_0']
 selected_node  = wpr_rank[:select_node]
 fea_list = find_value_according_index_list(fea_o, selected_node)
 location_list = find_value_according_index_list(location, selected_node)
-unselected_node = wpr_rank[select_node+1:114]
+unselected_node = wpr_rank[114+1:214]
 un_fea_list = find_value_according_index_list(fea_o, unselected_node)
 un_location_list = find_value_according_index_list(location, unselected_node)
 
-Rg_o = robustness_score(G)
-# print('Rg_o',Rg_o)
-
 args.input_dim = data_num
 print('input_dim: ',args.input_dim)
-ILGR_model = ILGRModel(args.input_dim, args.hidden_dim, args.output_dim, args.num_layer, args).to(device)
-optimizer = torch.optim.Adam(ILGR_model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+model_path = './model_save/_e_300_l_1e-05_20241120_125413.pth'
+ILGR = ILGRModel(args.input_dim, args.hidden_dim, args.output_dim, args.num_layer, args).to(device)
+ILGR = torch.load(model_path)
+ILGR.eval()
 loss_CrossEntropy = nn.CrossEntropyLoss()
-scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=1, cooldown = 1,verbose=True)
 
-# 重新构图
+# 重新构图 # ground truth
 R_g = [[] for _ in range(len(unselected_node))]
 R_A = [[] for _ in range(len(unselected_node))]
 R_Rg = []
 location_list.append(None)
 fea_list.append(None)
-# print(location_list)
 for i, (location, fea) in enumerate(zip(un_location_list, un_fea_list)):
     location_list[select_node] = location
     fea_list[select_node] = fea
-    # print(len(fea_list))
-    # print(len(fea_list[0]))
     R_g[i], R_A[i] = location_graph(location_list)
-    # plt.figure()
-    # nx.draw(R_g[i], pos=location_list,  alpha=0.8, node_size=8,
-    #         width=0.6, edge_color='#BBD6D8', font_size=0)
-    # plt.show()
     R_Rg.append(torch.tensor(robustness_score(R_g[i])))
 
 fea_list_tensor = torch.tensor(np.array(fea_list), requires_grad=True).requires_grad_(True).to(device)
 R_Rg_tensor = torch.stack(R_Rg, dim=0).requires_grad_(True).to(device)
-
 
 # 对关键性评分进行排序
 # criticality_scores = torch.argsort(R_Rg_tensor).to(device)
@@ -125,28 +112,20 @@ criticality_scores_normal = (criticality_scores - torch.min(criticality_scores))
 
 scores=[[] for _ in range(len(unselected_node))]
 loss_history = []
-# 训练过程
-for epoch in range(args.max_epoch):  # 假设训练100个epoch
+# eval
+with torch.no_grad():
     tensors = []
     for i, (location, fea) in enumerate(zip(un_location_list, un_fea_list)):
         location_list[select_node] = location
         fea_list[select_node] = fea
-        ILGR_model.train()
         R_g_tensor = R_g[i]
-        scores[i] = ILGR_model(fea_list_tensor, R_g_tensor)
+        scores[i] = ILGR(fea_list_tensor, R_g_tensor)
         # print(type(scores[i]))
         tensors.append(scores[i])
-    #print(tensors)
+
     scores_tensor = torch.stack(tensors, dim=0).requires_grad_(True).to(device)
     scores_tensor_scores = softsort(scores_tensor)
-    # print(scores_tensor_scores)
-    # print(criticality_scores)
-    # print(len(scores))
-    # print(type(scores))
-    #scores_tensor = torch.tensor(scores, requires_grad=True).requires_grad_(True).to(device)
-    # print(scores_tensor.retain_grad())
-    # print(scores_tensor.grad)
-    optimizer.zero_grad()
+    print(scores_tensor_scores)
 
     # loss = ranking_loss(scores_tensor_scores, criticality_scores)
     # loss = ranking_loss(scores_tensor, R_Rg_tensor)
@@ -166,32 +145,11 @@ for epoch in range(args.max_epoch):  # 假设训练100个epoch
             x+=x
     r_ij_tensor = torch.stack(r_ij, dim=0).requires_grad_(True).to(device)
     y_hat_ij_tensor = torch.stack(y_hat_ij, dim=0).requires_grad_(True).to(device)
+
     loss = loss_CrossEntropy(y_hat_ij_tensor, r_ij_tensor)
+    print(' loss: ' + str(loss.item()))
+    print(scores_tensor_scores)
 
-    # print(scores_tensor.retain_grad())
-    # print(scores_tensor.grad)
-    loss.backward(retain_graph=True)
-    optimizer.step()
-    loss_history.append(loss.item())
-    scheduler.step(loss.item())
-    print('epoch:{}, loss:{}'.format(epoch, loss))
-
-    # 测试
-    # ILGR_model.eval()
-    # with torch.no_grad():
-    #     test_scores = ILGR_model(fea_list, R_g[i])
-    #     print("Test Scores:", test_scores)
-
-fig = plt.figure()
-ax1 = fig.add_subplot(111)
-ax1.plot(range(len(loss_history)), loss_history)
-plt.ylabel('Loss')
-plt.xlabel('Epoch : {}'.format(args.max_epoch))
-plt.title('Training Loss: epoch' + str(args.max_epoch)+' lr'+ str(args.lr)+' '+str(device))
-plt.text(0, loss_history[0], str(format(loss_history[0],'.8f')))
-print(format(loss_history[(args.max_epoch - 1)],'.15f'))
-plt.text(round(args.max_epoch/10*9) , loss_history[(args.max_epoch - 1)], str(format(loss_history[(args.max_epoch - 1)],'.10f')),
-         horizontalalignment='left')
 
 # time stamp
 timestamp = time.time()
@@ -199,6 +157,5 @@ localtime = time.localtime(timestamp)
 formatted_time = time.strftime('%Y%m%d_%H%M%S',localtime)
 
 # Save
-plt.savefig('./training_loss/_Training_Loss_epoch_' + str(args.max_epoch) + '_lr_'+ str(args.lr)+'_'+str(formatted_time)+'.svg', format='svg')
-plt.show()
-torch.save(ILGR_model, './model_save/_e_' + str(args.max_epoch) + '_l_'+ str(args.lr)+'_'+str(formatted_time)+'.pth')
+np.savetxt('./eval/_epoch_' + str(args.max_epoch) + '_lr_'+ str(args.lr)+'_'+str(formatted_time)+'.txt', scores_tensor_scores)
+
