@@ -73,7 +73,7 @@ location = location_file['arr_0']
 selected_node  = wpr_rank[:select_node]
 fea_list = find_value_according_index_list(fea_o, selected_node)
 location_list = find_value_according_index_list(location, selected_node)
-unselected_node = wpr_rank[114+1:214]
+unselected_node = wpr_rank[114+1:130]
 un_fea_list = find_value_according_index_list(fea_o, unselected_node)
 un_location_list = find_value_according_index_list(location, unselected_node)
 
@@ -125,7 +125,7 @@ with torch.no_grad():
 
     scores_tensor = torch.stack(tensors, dim=0).requires_grad_(True).to(device)
     scores_tensor_scores = softsort(scores_tensor)
-    print(scores_tensor_scores)
+    # print(scores_tensor_scores)
 
     # loss = ranking_loss(scores_tensor_scores, criticality_scores)
     # loss = ranking_loss(scores_tensor, R_Rg_tensor)
@@ -148,7 +148,8 @@ with torch.no_grad():
 
     loss = loss_CrossEntropy(y_hat_ij_tensor, r_ij_tensor)
     print(' loss: ' + str(loss.item()))
-    print(scores_tensor_scores)
+    print(torch.argsort(scores_tensor))
+    print(torch.argsort(R_Rg_tensor))
 
 
 # time stamp
@@ -157,5 +158,5 @@ localtime = time.localtime(timestamp)
 formatted_time = time.strftime('%Y%m%d_%H%M%S',localtime)
 
 # Save
-np.savetxt('./eval/_epoch_' + str(args.max_epoch) + '_lr_'+ str(args.lr)+'_'+str(formatted_time)+'.txt', scores_tensor_scores)
+np.savetxt('./eval/_epoch_' + str(args.max_epoch) + '_lr_'+ str(args.lr)+'_'+str(formatted_time)+'.txt', torch.argsort(scores_tensor))
 
