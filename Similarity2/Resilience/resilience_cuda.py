@@ -37,8 +37,8 @@ rcParams.update(config)
 parser = argparse.ArgumentParser(
     description="train", formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
-parser.add_argument("--max_epoch", type=int, default=300)
-parser.add_argument("--lr", type=float, default=1e-5)
+parser.add_argument("--max_epoch", type=int, default=200)
+parser.add_argument("--lr", type=float, default=1e-6)
 parser.add_argument("--hidden_dim", default=1000, type=int)
 parser.add_argument("--output_dim", default=50, type=int)
 parser.add_argument("--num_layer", default=2, type=int)
@@ -90,37 +90,31 @@ optimizer = torch.optim.Adam(ILGR_model.parameters(), lr=args.lr, weight_decay=a
 loss_CrossEntropy = nn.CrossEntropyLoss()
 scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=1, cooldown = 1,verbose=True)
 
-# 重新构图
+# 重新构图，摘取特征值，计算关键性评分（弹性分数）
 R_g = [[] for _ in range(len(unselected_node))]
 R_A = [[] for _ in range(len(unselected_node))]
 R_Rg = []
 location_list.append(None)
 fea_list.append(None)
-# print(location_list)
 for i, (location, fea) in enumerate(zip(un_location_list, un_fea_list)):
     location_list[select_node] = location
     fea_list[select_node] = fea
-    # print(len(fea_list))
-    # print(len(fea_list[0]))
     R_g[i], R_A[i] = location_graph(location_list)
-    # plt.figure()
-    # nx.draw(R_g[i], pos=location_list,  alpha=0.8, node_size=8,
-    #         width=0.6, edge_color='#BBD6D8', font_size=0)
-    # plt.show()
     R_Rg.append(torch.tensor(robustness_score(R_g[i])))
 
 fea_list_tensor = torch.tensor(np.array(fea_list), requires_grad=True).requires_grad_(True).to(device)
 R_Rg_tensor = torch.stack(R_Rg, dim=0).requires_grad_(True).to(device)
 
-
-# 对关键性评分进行排序
+# 真实值
+# 关键性评分的排序
 # criticality_scores = torch.argsort(R_Rg_tensor).to(device)
 criticality_scores = softsort(R_Rg_tensor)
 criticality_scores_normal = (criticality_scores - torch.min(criticality_scores)) / (
              torch.max(criticality_scores) - torch.min(criticality_scores))
+# 关键性评分的分数
 # criticality_scores_normal = (R_Rg_tensor - torch.min(R_Rg_tensor)) / (
 #             torch.max(R_Rg_tensor) - torch.min(R_Rg_tensor))
-# print('criticality_scores',criticality_scores)
+
 
 
 scores=[[] for _ in range(len(unselected_node))]
@@ -134,33 +128,29 @@ for epoch in range(args.max_epoch):  # 假设训练100个epoch
         ILGR_model.train()
         R_g_tensor = R_g[i]
         scores[i] = ILGR_model(fea_list_tensor, R_g_tensor)
-        # print(type(scores[i]))
         tensors.append(scores[i])
-    #print(tensors)
     scores_tensor = torch.stack(tensors, dim=0).requires_grad_(True).to(device)
+    # 预测分数的排序
     scores_tensor_scores = softsort(scores_tensor)
-    # print(scores_tensor_scores)
-    # print(criticality_scores)
-    # print(len(scores))
-    # print(type(scores))
-    #scores_tensor = torch.tensor(scores, requires_grad=True).requires_grad_(True).to(device)
-    # print(scores_tensor.retain_grad())
-    # print(scores_tensor.grad)
     optimizer.zero_grad()
 
+    # 排序，排序
     # loss = ranking_loss(scores_tensor_scores, criticality_scores)
+    # 分数，分数
     # loss = ranking_loss(scores_tensor, R_Rg_tensor)
+    # 分数，排序
     # loss = ranking_loss(scores_tensor, criticality_scores)
 
-    # CrossEntropy
+    # CrossEntropy loss
+    # 预测分数的排序值
     scores_tensor_normal = (scores_tensor_scores - torch.min(scores_tensor_scores)) / (torch.max(scores_tensor_scores) - torch.min(scores_tensor_scores))
+    # 预测分数的分数值
     #scores_tensor_normal = (scores_tensor - torch.min(scores_tensor)) / (torch.max(scores_tensor) - torch.min(scores_tensor))
-    r_ij = []
-    y_hat_ij = []
+    r_ij = [] # 真实值
+    y_hat_ij = []  # 预测值
     x = 0
     for i in range(len(scores_tensor_normal)-1):
         for j in range(i + 1, len(scores_tensor_normal)-1):
-            # print(true_ranks[j],true_ranks[j])
             r_ij.append(criticality_scores_normal[i] - criticality_scores_normal[j])
             y_hat_ij.append(scores_tensor_normal[i] - scores_tensor_normal[j])
             x+=x
@@ -168,19 +158,12 @@ for epoch in range(args.max_epoch):  # 假设训练100个epoch
     y_hat_ij_tensor = torch.stack(y_hat_ij, dim=0).requires_grad_(True).to(device)
     loss = loss_CrossEntropy(y_hat_ij_tensor, r_ij_tensor)
 
-    # print(scores_tensor.retain_grad())
-    # print(scores_tensor.grad)
     loss.backward(retain_graph=True)
     optimizer.step()
     loss_history.append(loss.item())
     scheduler.step(loss.item())
     print('epoch:{}, loss:{}'.format(epoch, loss))
 
-    # 测试
-    # ILGR_model.eval()
-    # with torch.no_grad():
-    #     test_scores = ILGR_model(fea_list, R_g[i])
-    #     print("Test Scores:", test_scores)
 
 fig = plt.figure()
 ax1 = fig.add_subplot(111)

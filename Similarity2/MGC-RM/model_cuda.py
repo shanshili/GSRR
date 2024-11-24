@@ -206,19 +206,10 @@ class AttentionLayer(nn.Module):
     def forward(self,neighbor_embeddings):
         assert isinstance(neighbor_embeddings, torch.Tensor), f"Expected a Tensor, but got {type(neighbor_embeddings)}"
 
-        # self.W = nn.Linear(neighbor_embeddings.size(0), 3, bias=False)
-        # print(neighbor_embeddings.size())
-        # print(self.W(neighbor_embeddings).size())
-        # print(F.relu(self.W(neighbor_embeddings)).size())
-        # print(self.q(F.relu(self.W(neighbor_embeddings))).size())
+        # self.W = nn.Linear(neighbor_embeddings.size(0), 3, bias=False)  # 动态输入层数
         attention_scores = self.q(F.relu(self.W(neighbor_embeddings)))
-        # print('attention_scores',attention_scores)
         attention_weights = F.softmax(attention_scores,dim=0)
-        # print('attention_weights', attention_weights.T.size())
-        # print('neighbor_embeddings', neighbor_embeddings)
-        # print((attention_weights * neighbor_embeddings))
         weighted_neighbor_embeddings = torch.sum(attention_weights * neighbor_embeddings, dim=0)
-        # print('weighted_neighbor_embeddings', weighted_neighbor_embeddings.size())
         return weighted_neighbor_embeddings
 
 class NodeEmbeddingModule(nn.Module):
@@ -236,7 +227,6 @@ class NodeEmbeddingModule(nn.Module):
 
     def forward(self, X_v, G):
         h_v = X_v
-        # print('h_v',h_v)# 所有节点的初始特征
         """
         h_v[v] 1*2000 
         neighbor neighbors*2000
@@ -318,6 +308,7 @@ class ILGRModel(nn.Module):
 # 定义损失函数
 def ranking_loss(scores1, true_ranks1):
     loss = 0
+    # 归一化
     true_ranks = (true_ranks1 - torch.min(true_ranks1)) / (torch.max(true_ranks1) - torch.min(true_ranks1))
     scores = (scores1 - torch.min(scores1)) / (torch.max(scores1) - torch.min(scores1))
     for i in range(len(scores)-1):
