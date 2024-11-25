@@ -37,8 +37,8 @@ rcParams.update(config)
 parser = argparse.ArgumentParser(
     description="train", formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
-parser.add_argument("--max_epoch", type=int, default=200)
-parser.add_argument("--lr", type=float, default=1e-6)
+parser.add_argument("--max_epoch", type=int, default=400)
+parser.add_argument("--lr", type=float, default=1e-7)
 parser.add_argument("--hidden_dim", default=1000, type=int)
 parser.add_argument("--output_dim", default=50, type=int)
 parser.add_argument("--num_layer", default=2, type=int)
