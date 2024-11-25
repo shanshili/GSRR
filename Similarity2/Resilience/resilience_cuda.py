@@ -37,7 +37,7 @@ rcParams.update(config)
 parser = argparse.ArgumentParser(
     description="train", formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
-parser.add_argument("--max_epoch", type=int, default=400)
+parser.add_argument("--max_epoch", type=int, default=200)
 parser.add_argument("--lr", type=float, default=1e-6)
 parser.add_argument("--hidden_dim", default=1000, type=int)
 parser.add_argument("--output_dim", default=50, type=int)
@@ -80,8 +80,7 @@ unselected_node = wpr_rank[select_node+1:114]
 un_fea_list = find_value_according_index_list(fea_o, unselected_node)
 un_location_list = find_value_according_index_list(location, unselected_node)
 
-Rg_o = robustness_score(G)
-# print('Rg_o',Rg_o)
+# Rg_o = robustness_score(G)
 
 args.input_dim = data_num
 print('input_dim: ',args.input_dim)
@@ -114,6 +113,9 @@ criticality_scores_normal = (criticality_scores - torch.min(criticality_scores))
 # 关键性评分的分数
 # criticality_scores_normal = (R_Rg_tensor - torch.min(R_Rg_tensor)) / (
 #             torch.max(R_Rg_tensor) - torch.min(R_Rg_tensor))
+
+np.savetxt('./robustness_score/R_Rg_tensor_'+str(len(unselected_node))+'.txt', R_Rg_tensor.detach().numpy())
+np.savetxt('./robustness_score/criticality_scores_normal_'+str(len(unselected_node))+'.txt', criticality_scores_normal.detach().numpy())
 
 
 
@@ -185,3 +187,5 @@ formatted_time = time.strftime('%Y%m%d_%H%M%S',localtime)
 plt.savefig('./training_loss/_Training_Loss_epoch_' + str(args.max_epoch) + '_lr_'+ str(args.lr)+'_'+str(formatted_time)+'.svg', format='svg')
 plt.show()
 torch.save(ILGR_model, './model_save/_e_' + str(args.max_epoch) + '_l_'+ str(args.lr)+'_'+str(formatted_time)+'.pth')
+np.savetxt('./scores_save/scores_epoch_' + str(args.max_epoch) + '_lr_'+ str(args.lr)+'_'+str(formatted_time)+'.txt', scores_tensor.detach().numpy())
+np.savetxt('./scores_save/softsort_normal_epoch_' + str(args.max_epoch) + '_lr_'+ str(args.lr)+'_'+str(formatted_time)+'.txt', scores_tensor_normal.detach().numpy())

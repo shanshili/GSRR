@@ -558,3 +558,9 @@ def robustness_score(graph):
     Rg = (2 / (N - 1)) * ((N - c) / sum_reciprocal_nonzero)
     return Rg
 
+"""
+W_s
+"""
+# def Weighted_spectrum(graph):
+
+

@@ -14,7 +14,7 @@ class GAT(torch.nn.Module):
         self.conv2 = GATConv(hidden_dim, output_dim)
 
     def forward(self, x, edge_index):
-        x = self.conv1(x, edge_index) #edge_index表示邻接矩阵？
+        x = self.conv1(x, edge_index) #图的所有节点的特征，图的边索引
         x = F.relu(x)
         x = self.conv2(x, edge_index)
         x = F.tanh(x)
@@ -259,8 +259,6 @@ class NodeEmbeddingModule(nn.Module):
                 else:
                     neighbor_embeddings = [h_v[i] for i in neighbors]
                     neighbor_embeddings_tensor = torch.stack(neighbor_embeddings,  dim=0)
-                    assert isinstance(neighbor_embeddings_tensor,
-                                      torch.Tensor), f"Expected a Tensor, but got {type(neighbor_embeddings_tensor)}"
                     # necighbor_embeddings_tensor = torch.tensor(np.array(neighbor_embeddings), dtype=torch.float32)
                     # print(neighbor_embeddings_tensor)
                     # print(h_v[v].unsqueeze(0))
