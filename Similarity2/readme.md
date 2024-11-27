@@ -1,24 +1,44 @@
-# 1
+# .
 
-## perturbation
+### dataprocess2
+
+### GraphConstruct2
+
+### utils
+
+### model
+
+GAT
+
+### model_cuda
+
+### model_cuda2
+
+NodeEmbeddingModule2：modify GAT
+
+
+
+
+
+# MGC-RM
+
+
+
+## 1
+
+### perturbation
 
 Generate a perturbation graph
 
-## perturbation2
+### perturbation2
 
 Generate a perturbation graph
 
 packaged into a function
 
-## dataprocess2
+## 2
 
-## GraphConstruct2
-
-
-
-# 2
-
-## MFC_RMF
+### MFC_RMF
 
 Multi-Granularity Cross Representation and Matching
 
@@ -29,7 +49,7 @@ plt.savefig
 torch.save pth
 ```
 
-## MFC_RMF2
+### MFC_RMF2
 
 1. Specify a graph pair to **train** and save the model. 
 
@@ -42,25 +62,50 @@ np.savetxt('./similarity score/z'+ 'GP_'+str(j)+'_node_'+str(node)+'_data_'+str(
 np.savetxt('./prediction_loss/GraphPair_' + str(j) + '_n' + str(node) + '_d' + str(data_num) + '_Prediction_Loss_epoch_' + str(args.max_epoch) + '_lr_' + str(args.lr) + '_' + str(formatted_time) +'.txt', loss_history2)
 ```
 
-## model
+### MFC_RMF2cuda2
 
-GAT
+## 3
 
+### plotpredictloss
 
+### plotscore
 
-# 3
+## 4
 
-## plotpredictloss
-
-## plotscore
-
-# 4
-
-## PageRank2
+### PageRank2
 
 weights PageRank
 
-# 5
+## 5
 
-## Perform
+### Perform
 
+### plotpredictloss
+
+### plotscore
+
+## 6
+
+### no-readout
+
+
+
+
+
+# Resilience
+
+## 1
+
+### resilience
+
+### resilience_cuda
+
+### resilience_test_cuda_plot
+
+model test
+
+### resilience_cuda_eval
+
+## 2
+
+### plotscore

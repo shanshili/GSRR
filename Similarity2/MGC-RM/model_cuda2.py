@@ -1,9 +1,10 @@
 import torch.nn
 from torch import nn
 import torch.nn.functional as F
-from torch_geometric.nn import GCNConv, GATConv,SAGEConv
+from torch_geometric.nn import GATConv
 import numpy as np
 from scipy.special import comb
+from torch_geometric.utils import k_hop_subgraph
 
 
 class AttentionLayer(nn.Module):
@@ -111,7 +112,7 @@ class NodeEmbeddingModule2(nn.Module):
             nn.Linear((2 * input_dim) // (2 ** i), hidden_dim // (2 ** i)) for i in range(num_layers)
         ])
         self.attention_layers = nn.ModuleList([
-            GAT(input_dim // (2 ** i), hidden_dim // (2 ** (i-1)) ,hidden_dim // (2 ** i)) for i in range(num_layers)
+            GAT(input_dim // (2 ** i), input_dim // (2 ** i) ,input_dim // (2 ** i)) for i in range(num_layers)
         ])
         self.output_layer = nn.Linear(hidden_dim // (2 ** (num_layers - 1)), output_dim)
 
@@ -137,33 +138,26 @@ class NodeEmbeddingModule2(nn.Module):
         [h_v, h_N_v] 1*2000
         h_v() 1*500
         """
+
         for l in range(len(self.layers)):  # 当前层
             h_N_v = []  # 邻居节点的特征
+            neighbor_embeddings_tensor = h_v
+            # # print(self.attention_layers)
+            # mean_1 = torch.mean(neighbor_embeddings_tensor)  # 计算feature平均值
+            # std_1 = torch.std(neighbor_embeddings_tensor)  # 计算feature标准差
+            # neighbor_embeddings_tensor = (neighbor_embeddings_tensor - mean_1) / std_1  # 标准化特征 标准正态分布
             for v in range(len(X_v)):  # 遍历当前图中的每个节点  #15个
-                # print('l', l)
-                # print('v',v)
-                neighbors = list(G.neighbors(v))  # 获取节点v的邻居
-                # print('neighbors',neighbors)
+                neighbors = list(G.neighbors(v))
+                edge_index = [(v, num) for num in neighbors]
+                subgraph_edge_index_tensor = torch.tensor(edge_index, dtype=torch.long).t().contiguous()
+                # print(subgraph_edge_index_tensor)
                 if not neighbors:  # 孤立节点
                     h_N_v.append(torch.zeros_like(h_v[v]))
                 else:
-                    # 邻居节点特征
-                    neighbor_embeddings = [h_v[i] for i in neighbors]
-                    # 连接邻居节点特征list
-                    neighbor_embeddings_tensor = torch.stack(neighbor_embeddings, dim=0)
-                    mean_1 = torch.mean(neighbor_embeddings_tensor)  # 计算feature平均值
-                    std_1 = torch.std(neighbor_embeddings_tensor)  # 计算feature标准差
-                    neighbor_embeddings_tensor = (neighbor_embeddings_tensor - neighbor_embeddings_tensor) / neighbor_embeddings_tensor  # 标准化特征 标准正态分布
-                    edge_index = np.array(list(G.edges)).T
-                    edge_index_tensor = torch.tensor(edge_index, dtype=torch.int64)
-
-                    # necighbor_embeddings_tensor = torch.tensor(np.array(neighbor_embeddings), dtype=torch.float32)
-                    # print(neighbor_embeddings_tensor)
-                    # print(h_v[v].unsqueeze(0))
-                    # 计算邻居节点特征attention
-                    h_N_v_a = self.attention_layers[l](neighbor_embeddings_tensor)  # 每个节点的邻居嵌入hidden_dim//(2**i)
-                    # print(h_N_v_a.size())
-                    h_N_v.append(h_N_v_a)  # 添加每个节点的邻居嵌入
+                    # 计算邻居节点特征
+                    h_N_v_a = self.attention_layers[l](neighbor_embeddings_tensor,subgraph_edge_index_tensor)  # 每个节点的邻居嵌入hidden_dim//(2**i)
+                    # print(h_N_v_a[v].size())  # 该节点对邻居节点的加权求和
+                    h_N_v.append(h_N_v_a[v])  # 添加每个节点的邻居嵌入
                     # print(len(h_N_v))
             # print('h_N_v', len(h_N_v))
             h_N_v = torch.stack(h_N_v, dim=0)  # list转torch 15个节点的邻居的嵌入
@@ -171,8 +165,10 @@ class NodeEmbeddingModule2(nn.Module):
             # print('h_v', h_v.size())
             # print('.', torch.cat([h_v, h_N_v], dim=1).size())
             # print(self.layers[l])
+            # print('[]',F.relu(self.layers[l](torch.cat([h_v[14].unsqueeze(0), h_N_v[14].unsqueeze(0)], dim=1))))
             h_v = F.relu(self.layers[l](torch.cat([h_v, h_N_v], dim=1)))
-        print(self.layers,self.attention_layers,self.output_layer)
+            # print('@',h_v[14])
+            # print(h_v.size())
         return self.output_layer(h_v[14])
 
 
@@ -194,16 +190,12 @@ class RegressionModule(nn.Module):
 class ILGRModel_test(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim, num_layers,args):
         super(ILGRModel_test, self).__init__()
-        # self.embedding_module = NodeEmbeddingModule(input_dim, hidden_dim, output_dim, num_layers,args)
         self.embedding_module = NodeEmbeddingModule2(input_dim, hidden_dim, output_dim, num_layers,args)
         self.regression_module = RegressionModule(output_dim, output_dim//2, 1)
 
     def forward(self, X_v, G):
         embeddings = self.embedding_module(X_v, G)
-        # print(embeddings.size())
         scores = self.regression_module(embeddings)
-        # print(type(scores))
-        # print('scores',scores)
         return scores
 
 # 定义损失函数
@@ -214,24 +206,11 @@ def ranking_loss(scores1, true_ranks1):
     scores = (scores1 - torch.min(scores1)) / (torch.max(scores1) - torch.min(scores1))
     for i in range(len(scores)-1):
         for j in range(i + 1, len(scores)-1):
-            # print(true_ranks[j],true_ranks[j])
             r_ij = true_ranks[i] - true_ranks[j]
             y_hat_ij = scores[i] - scores[j]
-            # f_r_ij = F.sigmoid(torch.tensor(r_ij,requires_grad=True,dtype=torch.float32))
             f_r_ij = F.sigmoid(r_ij)
-            # print('r',r_ij.item(),'   y',y_hat_ij.item())
-            # print('f_y',F.sigmoid(y_hat_ij).item())
-            # print('f_r',f_r_ij.item(),'   1-f_r',(1-f_r_ij).item())
-            # # print('log', torch.log(F.sigmoid(y_hat_ij)))
-            # print('log', torch.log(F.sigmoid(y_hat_ij)).item(),'   1- log', torch.log(1-F.sigmoid(y_hat_ij)).item(),
-            # 'log', torch.log1p(F.sigmoid(y_hat_ij)).item(),'   1- log', torch.log1p(1-F.sigmoid(y_hat_ij)).item())
-            # print('loss' , (-f_r_ij * torch.log(F.sigmoid(y_hat_ij)) - (1 - f_r_ij) * torch.log(1 - F.sigmoid(y_hat_ij))).item(),
-            #       'loss' , (-f_r_ij * torch.log1p(F.sigmoid(y_hat_ij)-1) - (1 - f_r_ij) * torch.log1p(-F.sigmoid(y_hat_ij))).item())
-            # loss += -f_r_ij * torch.log(F.sigmoid(y_hat_ij)) - (1 - f_r_ij) * torch.log(1 - F.sigmoid(y_hat_ij))
             loss += -f_r_ij * torch.log1p(F.sigmoid(y_hat_ij)-1) - (1 - f_r_ij) * torch.log1p(-F.sigmoid(y_hat_ij))
 
-    # print('loss',loss)
-    # print('loss', loss/int(comb(len(scores), 2)))
     return loss  /int(comb(len(scores), 2))
 
 

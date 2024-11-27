@@ -23,11 +23,12 @@ from matplotlib import rcParams
 """
 test1:
 增加层数
-test1:"--num_layer", default=3
-改变层间关系
+test2:  "--num_layer", default=2
+修改GAT
+
 
 """
-test = 'test1'
+test = 'test2'
 
 # 全局修改字体
 config = {
@@ -47,7 +48,7 @@ parser.add_argument("--max_epoch", type=int, default=100)
 parser.add_argument("--lr", type=float, default=1e-6)
 parser.add_argument("--hidden_dim", default=1000, type=int)
 parser.add_argument("--output_dim", default=50, type=int)
-parser.add_argument("--num_layer", default=3, type=int)
+parser.add_argument("--num_layer", default=2, type=int)
 parser.add_argument("--weight_decay", type=int, default=1e-4)
 args = parser.parse_args()
 args.cuda = torch.cuda.is_available()

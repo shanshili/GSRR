@@ -16,7 +16,7 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 sys.path.append('D:\Tjnu-p\ML-learning\similarity2\MGC-RM')
 # 现在可以导入外部包了
 from utils import find_value_according_index_list, robustness_score
-from model_cuda import (GAT,ranking_loss,AttentionLayer,NodeEmbeddingModule,
+from model_cuda import (GAT,ranking_loss,ranking_loss2,AttentionLayer,NodeEmbeddingModule,
                    RegressionModule,ILGRModel,softsort)
 from GraphConstruct2 import location_graph
 
@@ -37,8 +37,8 @@ rcParams.update(config)
 parser = argparse.ArgumentParser(
     description="train", formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
-parser.add_argument("--max_epoch", type=int, default=200)
-parser.add_argument("--lr", type=float, default=1e-6)
+parser.add_argument("--max_epoch", type=int, default=100)
+parser.add_argument("--lr", type=float, default=1e-2)
 parser.add_argument("--hidden_dim", default=1000, type=int)
 parser.add_argument("--output_dim", default=50, type=int)
 parser.add_argument("--num_layer", default=2, type=int)
@@ -86,6 +86,7 @@ args.input_dim = data_num
 print('input_dim: ',args.input_dim)
 ILGR_model = ILGRModel(args.input_dim, args.hidden_dim, args.output_dim, args.num_layer, args).to(device)
 optimizer = torch.optim.Adam(ILGR_model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+# loss_CrossEntropy = nn.CrossEntropyLoss()
 loss_CrossEntropy = nn.CrossEntropyLoss()
 scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=1, cooldown = 1,verbose=True)
 
@@ -101,7 +102,7 @@ for i, (location, fea) in enumerate(zip(un_location_list, un_fea_list)):
     R_g[i], R_A[i] = location_graph(location_list)
     R_Rg.append(torch.tensor(robustness_score(R_g[i])))
 
-fea_list_tensor = torch.tensor(np.array(fea_list), requires_grad=True).requires_grad_(True).to(device)
+# fea_list_tensor = torch.tensor(np.array(fea_list), requires_grad=True).requires_grad_(True).to(device)
 R_Rg_tensor = torch.stack(R_Rg, dim=0).requires_grad_(True).to(device)
 
 # 真实值
@@ -114,8 +115,8 @@ criticality_scores_normal = (criticality_scores - torch.min(criticality_scores))
 # criticality_scores_normal = (R_Rg_tensor - torch.min(R_Rg_tensor)) / (
 #             torch.max(R_Rg_tensor) - torch.min(R_Rg_tensor))
 
-np.savetxt('./robustness_score/R_Rg_tensor_'+str(len(unselected_node))+'.txt', R_Rg_tensor.detach().numpy())
-np.savetxt('./robustness_score/criticality_scores_normal_'+str(len(unselected_node))+'.txt', criticality_scores_normal.detach().numpy())
+# np.savetxt('./robustness_score/R_Rg_tensor_'+str(len(unselected_node))+'.txt', R_Rg_tensor.detach().numpy())
+# np.savetxt('./robustness_score/criticality_scores_normal_'+str(len(unselected_node))+'.txt', criticality_scores_normal.detach().numpy())
 
 
 
@@ -127,6 +128,7 @@ for epoch in range(args.max_epoch):  # 假设训练100个epoch
     for i, (location, fea) in enumerate(zip(un_location_list, un_fea_list)):
         location_list[select_node] = location
         fea_list[select_node] = fea
+        fea_list_tensor = torch.tensor(np.array(fea_list), requires_grad=True).requires_grad_(True).to(device)
         ILGR_model.train()
         R_g_tensor = R_g[i]
         scores[i] = ILGR_model(fea_list_tensor, R_g_tensor)
@@ -137,28 +139,29 @@ for epoch in range(args.max_epoch):  # 假设训练100个epoch
     optimizer.zero_grad()
 
     # 排序，排序
-    # loss = ranking_loss(scores_tensor_scores, criticality_scores)
+    loss = ranking_loss2(scores_tensor_scores, criticality_scores)
     # 分数，分数
     # loss = ranking_loss(scores_tensor, R_Rg_tensor)
     # 分数，排序
     # loss = ranking_loss(scores_tensor, criticality_scores)
 
-    # CrossEntropy loss
-    # 预测分数的排序值
-    scores_tensor_normal = (scores_tensor_scores - torch.min(scores_tensor_scores)) / (torch.max(scores_tensor_scores) - torch.min(scores_tensor_scores))
-    # 预测分数的分数值
-    #scores_tensor_normal = (scores_tensor - torch.min(scores_tensor)) / (torch.max(scores_tensor) - torch.min(scores_tensor))
-    r_ij = [] # 真实值
-    y_hat_ij = []  # 预测值
-    x = 0
-    for i in range(len(scores_tensor_normal)-1):
-        for j in range(i + 1, len(scores_tensor_normal)-1):
-            r_ij.append(criticality_scores_normal[i] - criticality_scores_normal[j])
-            y_hat_ij.append(scores_tensor_normal[i] - scores_tensor_normal[j])
-            x+=x
-    r_ij_tensor = torch.stack(r_ij, dim=0).requires_grad_(True).to(device)
-    y_hat_ij_tensor = torch.stack(y_hat_ij, dim=0).requires_grad_(True).to(device)
-    loss = loss_CrossEntropy(y_hat_ij_tensor, r_ij_tensor)
+    # # CrossEntropy loss
+    # # 预测分数的排序值
+    # scores_tensor_normal = (scores_tensor_scores - torch.min(scores_tensor_scores)) / (torch.max(scores_tensor_scores) - torch.min(scores_tensor_scores))
+    # # 预测分数的分数值
+    # #scores_tensor_normal = (scores_tensor - torch.min(scores_tensor)) / (torch.max(scores_tensor) - torch.min(scores_tensor))
+    # r_ij = [] # 真实值
+    # y_hat_ij = []  # 预测值
+    # x = 0
+    # for i in range(len(scores_tensor_normal)-1):
+    #     for j in range(i + 1, len(scores_tensor_normal)-1):
+    #         r_ij.append(criticality_scores_normal[i] - criticality_scores_normal[j])
+    #         y_hat_ij.append(scores_tensor_normal[i] - scores_tensor_normal[j])
+    #         x+=x
+    # r_ij_tensor = torch.stack(r_ij, dim=0).requires_grad_(True).to(device)
+    # y_hat_ij_tensor = torch.stack(y_hat_ij, dim=0).requires_grad_(True).to(device)
+    # loss = loss_CrossEntropy(y_hat_ij_tensor, r_ij_tensor)
+    # print(loss.item())
 
     loss.backward(retain_graph=True)
     optimizer.step()
@@ -189,3 +192,15 @@ plt.show()
 torch.save(ILGR_model, './model_save/_e_' + str(args.max_epoch) + '_l_'+ str(args.lr)+'_'+str(formatted_time)+'.pth')
 np.savetxt('./scores_save/scores_epoch_' + str(args.max_epoch) + '_lr_'+ str(args.lr)+'_'+str(formatted_time)+'.txt', scores_tensor.detach().numpy())
 np.savetxt('./scores_save/softsort_normal_epoch_' + str(args.max_epoch) + '_lr_'+ str(args.lr)+'_'+str(formatted_time)+'.txt', scores_tensor_normal.detach().numpy())
+
+
+location_list_a = np.array(location_list)
+un_location_list_a = np.array(un_location_list)
+plt.scatter(un_location_list_a[:,0], un_location_list_a[:,1], s=15, c=scores_tensor_scores.detach().numpy(), cmap='Greens')
+plt.scatter(location_list_a[:select_node,0], location_list_a[:select_node,1], s=20, c='#f44336')  # selected_node
+plt.xlabel('Longitude')
+plt.ylabel('Latitude')
+plt.colorbar()
+plt.title('softsort_normal')
+plt.savefig('./scores_save/_softsort_normal_epoch_' + str(args.max_epoch) + '_lr_'+ str(args.lr)+'_'+str(formatted_time)+'.svg', format='svg')
+plt.show()

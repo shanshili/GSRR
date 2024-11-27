@@ -73,13 +73,13 @@ location = location_file['arr_0']
 selected_node  = wpr_rank[:select_node]
 fea_list = find_value_according_index_list(fea_o, selected_node)
 location_list = find_value_according_index_list(location, selected_node)
-unselected_node = wpr_rank[114+1:130]
+unselected_node = wpr_rank[114+1:214]
 un_fea_list = find_value_according_index_list(fea_o, unselected_node)
 un_location_list = find_value_according_index_list(location, unselected_node)
 
 args.input_dim = data_num
 print('input_dim: ',args.input_dim)
-model_path = './model_save/_e_200_l_1e-06_20241124_221540.pth'
+model_path = './model_save/_e_250_l_1e-05_20241127_184058.pth'
 ILGR = ILGRModel(args.input_dim, args.hidden_dim, args.output_dim, args.num_layer, args).to(device)
 ILGR = torch.load(model_path)
 ILGR.eval()

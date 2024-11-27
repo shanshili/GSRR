@@ -262,16 +262,18 @@ class NodeEmbeddingModule(nn.Module):
                     # necighbor_embeddings_tensor = torch.tensor(np.array(neighbor_embeddings), dtype=torch.float32)
                     # print(neighbor_embeddings_tensor)
                     # print(h_v[v].unsqueeze(0))
-                    h_N_v_a = self.attention_layers[l](neighbor_embeddings_tensor)
-                    h_N_v.append(h_N_v_a) # 与上一层的h_v进行attention
+                    h_N_v_a = self.attention_layers[l](neighbor_embeddings_tensor)  # 邻居节点汇聚特征
+                    # print(h_N_v_a.size())
+                    h_N_v.append(h_N_v_a) # 连接每个节点的邻居节点的特征
+                    # print(len(h_N_v))
             # print('h_N_v', h_N_v)
             h_N_v = torch.stack(h_N_v,  dim=0)
-            assert isinstance(h_N_v, torch.Tensor), f"Expected a Tensor, but got {type(h_N_v)}"
+            # assert isinstance(h_N_v, torch.Tensor), f"Expected a Tensor, but got {type(h_N_v)}"
             # print('h_N_v',h_N_v.size())
             # print('h_v', h_v.size())
             # print('.', torch.cat([h_v, h_N_v], dim=1).size())
             # print(self.layers[l])
-            h_v = F.relu(self.layers[l](torch.cat([h_v, h_N_v], dim=1)))
+            h_v = F.relu(self.layers[l](torch.cat([h_v, h_N_v], dim=1)))   # 图上所有节点
         return self.output_layer(h_v[14])
 
 
@@ -309,6 +311,7 @@ def ranking_loss(scores1, true_ranks1):
     # 归一化
     true_ranks = (true_ranks1 - torch.min(true_ranks1)) / (torch.max(true_ranks1) - torch.min(true_ranks1))
     scores = (scores1 - torch.min(scores1)) / (torch.max(scores1) - torch.min(scores1))
+    # print(true_ranks,scores)
     for i in range(len(scores)-1):
         for j in range(i + 1, len(scores)-1):
             # print(true_ranks[j],true_ranks[j])
@@ -326,10 +329,44 @@ def ranking_loss(scores1, true_ranks1):
             #       'loss' , (-f_r_ij * torch.log1p(F.sigmoid(y_hat_ij)-1) - (1 - f_r_ij) * torch.log1p(-F.sigmoid(y_hat_ij))).item())
             # loss += -f_r_ij * torch.log(F.sigmoid(y_hat_ij)) - (1 - f_r_ij) * torch.log(1 - F.sigmoid(y_hat_ij))
             loss += -f_r_ij * torch.log1p(F.sigmoid(y_hat_ij)-1) - (1 - f_r_ij) * torch.log1p(-F.sigmoid(y_hat_ij))
+            #  loss += -f_r_ij * torch.log1p(F.sigmoid(y_hat_ij)) - (1 - f_r_ij) * torch.log1p(1-F.sigmoid(y_hat_ij))
+
 
     # print('loss',loss)
     # print('loss', loss/int(comb(len(scores), 2)))
-    return loss  /int(comb(len(scores), 2))
+    return loss  #  /int(comb(len(scores), 2))
+
+
+# 定义损失函数
+def ranking_loss2(scores1, true_ranks1):
+    loss = 0
+    loss2 = 0
+    #w1
+    # k = 5
+    # beta = 10
+    #w2
+    k = 30
+    beta = 6.9
+    # 归一化
+    # true_ranks = true_ranks1
+    true_ranks = (true_ranks1 - torch.min(true_ranks1)) / (torch.max(true_ranks1) - torch.min(true_ranks1))
+    scores = (scores1 - torch.min(scores1)) / (torch.max(scores1) - torch.min(scores1))
+    for i in range(len(scores)-1):
+        for j in range(i + 1, len(scores)-1):
+            r_ij = true_ranks[i] - true_ranks[j]
+            # w = k*torch.exp(-beta*(true_ranks[i]**2+true_ranks[j]**2))  #w1
+            w = k*torch.exp(-beta*(true_ranks[i]+true_ranks[j]))   #w2
+            y_hat_ij = scores[i] - scores[j]
+            f_r_ij = F.sigmoid(r_ij)
+            # print(true_ranks[i].item(),true_ranks[j].item(),'\n',w.item())
+            loss +=  w*(-f_r_ij * torch.log1p(F.sigmoid(y_hat_ij)-1) - (1 - f_r_ij) * torch.log1p(-F.sigmoid(y_hat_ij)))
+            loss2 += (-f_r_ij * torch.log1p(F.sigmoid(y_hat_ij) - 1) - (1 - f_r_ij) * torch.log1p(
+                -F.sigmoid(y_hat_ij)))
+            # print((-f_r_ij * torch.log1p(F.sigmoid(y_hat_ij) - 1) - (1 - f_r_ij) * torch.log1p(-F.sigmoid(y_hat_ij))).item())
+            # print(loss)
+            # print((w*(-f_r_ij * torch.log1p(F.sigmoid(y_hat_ij)-1) - (1 - f_r_ij) * torch.log1p(-F.sigmoid(y_hat_ij)))).item())
+            # print(loss2)
+    return loss
 
 
 def softsort(x, tau=0.1):
