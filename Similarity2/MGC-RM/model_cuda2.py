@@ -224,3 +224,6 @@ def softsort(x, tau=0.1):
     # 计算软排序后的张量
     soft_sorted_x = soft_permutation_matrix @ x
     return soft_sorted_x
+
+
+
