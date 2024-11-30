@@ -190,7 +190,7 @@ class RegressionModule(nn.Module):
 class ILGRModel_test(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim, num_layers,args):
         super(ILGRModel_test, self).__init__()
-        self.embedding_module = NodeEmbeddingModule2(input_dim, hidden_dim, output_dim, num_layers,args)
+        self.embedding_module = NodeEmbeddingModule(input_dim, hidden_dim, output_dim, num_layers,args)
         self.regression_module = RegressionModule(output_dim, output_dim//2, 1)
 
     def forward(self, X_v, G):
@@ -212,6 +212,45 @@ def ranking_loss(scores1, true_ranks1):
             loss += -f_r_ij * torch.log1p(F.sigmoid(y_hat_ij)-1) - (1 - f_r_ij) * torch.log1p(-F.sigmoid(y_hat_ij))
 
     return loss  /int(comb(len(scores), 2))
+
+
+
+
+# 定义损失函数
+def ranking_loss2(scores1, true_ranks1):
+    loss = 0
+    loss2 = 0
+    #w1
+    # k = 5
+    # beta = 10
+    #w2
+    k = 30
+    beta = 6.9
+    #w3
+    k =10# 13.5# 10.8# 24.8# 38# 50 # 17.9# 17.9 # 8.5
+    a =70# 14.2# 13.1 #21.7# 21.7# 38# 50# 29# 50
+    # 归一化
+    # true_ranks = true_ranks1
+    true_ranks = (true_ranks1 - torch.min(true_ranks1)) / (torch.max(true_ranks1) - torch.min(true_ranks1))
+    scores = (scores1 - torch.min(scores1)) / (torch.max(scores1) - torch.min(scores1))
+    for i in range(len(scores)-1):
+        for j in range(i + 1, len(scores)-1):
+            r_ij = true_ranks[i] - true_ranks[j]
+            # w = k*torch.exp(-beta*(true_ranks[i]**2+true_ranks[j]**2))  #w1
+            # w = k*torch.exp(-beta*(true_ranks[i]+true_ranks[j]))   #w2
+            w = k*(1/( (1+a*torch.abs(true_ranks[i])) * (1+a*torch.abs(true_ranks[j]))  ) ) #w3
+            y_hat_ij = scores[i] - scores[j]
+            f_r_ij = F.sigmoid(r_ij)
+            # print(true_ranks[i].item(),true_ranks[j].item(),'\n',w.item())
+            loss +=  w*(-f_r_ij * torch.log1p(F.sigmoid(y_hat_ij)-1) - (1 - f_r_ij) * torch.log1p(-F.sigmoid(y_hat_ij)))
+            loss2 += (-f_r_ij * torch.log1p(F.sigmoid(y_hat_ij) - 1) - (1 - f_r_ij) * torch.log1p(
+                -F.sigmoid(y_hat_ij)))
+            # print((-f_r_ij * torch.log1p(F.sigmoid(y_hat_ij) - 1) - (1 - f_r_ij) * torch.log1p(-F.sigmoid(y_hat_ij))).item())
+            # print(loss)
+            # print((w*(-f_r_ij * torch.log1p(F.sigmoid(y_hat_ij)-1) - (1 - f_r_ij) * torch.log1p(-F.sigmoid(y_hat_ij)))).item())
+            # print(loss2)
+    return loss
+
 
 
 def softsort(x, tau=0.1):
