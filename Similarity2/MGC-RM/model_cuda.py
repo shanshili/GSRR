@@ -337,7 +337,7 @@ def ranking_loss(scores1, true_ranks1):
     return loss  #  /int(comb(len(scores), 2))
 
 
-# 定义损失函数
+# 加权损失函数
 def ranking_loss2(scores1, true_ranks1):
     loss = 0
     loss2 = 0
@@ -364,8 +364,7 @@ def ranking_loss2(scores1, true_ranks1):
             f_r_ij = F.sigmoid(r_ij)
             # print(true_ranks[i].item(),true_ranks[j].item(),'\n',w.item())
             loss +=  w*(-f_r_ij * torch.log1p(F.sigmoid(y_hat_ij)-1) - (1 - f_r_ij) * torch.log1p(-F.sigmoid(y_hat_ij)))
-            loss2 += (-f_r_ij * torch.log1p(F.sigmoid(y_hat_ij) - 1) - (1 - f_r_ij) * torch.log1p(
-                -F.sigmoid(y_hat_ij)))
+            # loss2 += (-f_r_ij * torch.log1p(F.sigmoid(y_hat_ij) - 1) - (1 - f_r_ij) * torch.log1p(-F.sigmoid(y_hat_ij)))
             # print((-f_r_ij * torch.log1p(F.sigmoid(y_hat_ij) - 1) - (1 - f_r_ij) * torch.log1p(-F.sigmoid(y_hat_ij))).item())
             # print(loss)
             # print((w*(-f_r_ij * torch.log1p(F.sigmoid(y_hat_ij)-1) - (1 - f_r_ij) * torch.log1p(-F.sigmoid(y_hat_ij)))).item())

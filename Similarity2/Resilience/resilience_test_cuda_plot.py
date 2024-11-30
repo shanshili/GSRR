@@ -17,7 +17,7 @@ import torch.nn.functional as F
 sys.path.append('F:\Tjnu-p\ML-learning\similarity2\MGC-RM')
 # 现在可以导入外部包了
 from utils import find_value_according_index_list, robustness_score
-from model_cuda2 import (ILGRModel_test,softsort)
+from model_cuda2 import (ILGRModel_test,softsort,ranking_loss)
 from GraphConstruct2 import location_graph
 
 from matplotlib import rcParams
@@ -27,12 +27,12 @@ test1:
 test2:  "--num_layer", default=2
 修改GAT
 test3:
-w(r_ij)
+w(r_ij)自定义loss
 test4:
 ranknet
 
 """
-test = 'test2'
+test = 'test0'
 
 # 全局修改字体
 config = {
@@ -48,7 +48,7 @@ rcParams.update(config)
 parser = argparse.ArgumentParser(
     description="train", formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
-parser.add_argument("--max_epoch", type=int, default=300)
+parser.add_argument("--max_epoch", type=int, default=200)
 parser.add_argument("--lr", type=float, default=1e-7)
 parser.add_argument("--hidden_dim", default=1000, type=int)
 parser.add_argument("--output_dim", default=50, type=int)
@@ -172,6 +172,9 @@ for epoch in range(args.max_epoch):  # 假设训练100个epoch
     loss = loss_CrossEntropy(y_hat_ij_tensor, r_ij_tensor)
     
     """
+
+    """
+    # test4
     # 预测分数的排序值
     scores_tensor_normal = (scores_tensor_scores - torch.min(scores_tensor_scores)) / (torch.max(scores_tensor_scores) - torch.min(scores_tensor_scores))
     r_ij = []  # 真实值
@@ -199,6 +202,7 @@ for epoch in range(args.max_epoch):  # 假设训练100个epoch
     loss = -p_r_ij * torch.log(p_y_ij) - (1 - p_r_ij) * torch.log(1-p_y_ij)
     loss= loss.sum()
     # loss = loss_CrossEntropy(p_y_ij, p_r_ij)
+    """
 
     loss.backward(retain_graph=True)
     optimizer.step()
@@ -227,12 +231,12 @@ formatted_time = time.strftime('%Y%m%d_%H%M%S',localtime)
 plt.savefig('./training_loss/'+test+'_Training_Loss_epoch_' + str(args.max_epoch) + '_lr_'+ str(args.lr)+'_'+str(formatted_time)+'.svg', format='svg')
 plt.show()
 torch.save(ILGR_model_test, './model_save/'+test+'_e_' + str(args.max_epoch) + '_l_'+ str(args.lr)+'_'+str(formatted_time)+'.pth')
-# np.savetxt('./scores_save/scores_epoch_' + str(args.max_epoch) + '_lr_'+ str(args.lr)+'_'+str(formatted_time)+'.txt', scores_tensor.detach().numpy())
-# np.savetxt('./scores_save/softsort_normal_epoch_' + str(args.max_epoch) + '_lr_'+ str(args.lr)+'_'+str(formatted_time)+'.txt', scores_tensor_normal.detach().numpy())
+np.savetxt('./scores_save/scores_epoch_' + str(args.max_epoch) + '_lr_'+ str(args.lr)+'_'+str(formatted_time)+'.txt', scores_tensor.cpu() .detach().numpy())
+np.savetxt('./scores_save/softsort_normal_epoch_' + str(args.max_epoch) + '_lr_'+ str(args.lr)+'_'+str(formatted_time)+'.txt', scores_tensor_scores.cpu() .detach().numpy())
 
 location_list_a = np.array(location_list)
 un_location_list_a = np.array(un_location_list)
-plt.scatter(un_location_list_a[:,0], un_location_list_a[:,1], s=15, c=scores_tensor_normal.cpu().detach().numpy(), cmap='Greens')
+plt.scatter(un_location_list_a[:,0], un_location_list_a[:,1], s=15, c=scores_tensor_scores.cpu().detach().numpy(), cmap='Greens')
 plt.scatter(location_list_a[:(select_node-1),0], location_list_a[:(select_node-1),1], s=20, c='#f44336')  # selected_node
 plt.xlabel('Longitude')
 plt.ylabel('Latitude')

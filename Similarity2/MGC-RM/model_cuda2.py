@@ -102,7 +102,7 @@ class GAT(torch.nn.Module):
         x = F.tanh(x)
         return x
 
-
+# 修改GAT层
 class NodeEmbeddingModule2(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim, num_layers, args):
         super(NodeEmbeddingModule2, self).__init__()
@@ -211,12 +211,12 @@ def ranking_loss(scores1, true_ranks1):
             f_r_ij = F.sigmoid(r_ij)
             loss += -f_r_ij * torch.log1p(F.sigmoid(y_hat_ij)-1) - (1 - f_r_ij) * torch.log1p(-F.sigmoid(y_hat_ij))
 
-    return loss  /int(comb(len(scores), 2))
+    return loss #  /int(comb(len(scores), 2))
 
 
 
 
-# 定义损失函数
+# 加权损失函数
 def ranking_loss2(scores1, true_ranks1):
     loss = 0
     loss2 = 0

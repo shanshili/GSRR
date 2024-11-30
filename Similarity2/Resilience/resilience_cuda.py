@@ -189,12 +189,12 @@ plt.savefig('./training_loss/_Training_Loss_epoch_' + str(args.max_epoch) + '_lr
 plt.show()
 torch.save(ILGR_model, './model_save/_e_' + str(args.max_epoch) + '_l_'+ str(args.lr)+'_'+str(formatted_time)+'.pth')
 np.savetxt('./scores_save/scores_epoch_' + str(args.max_epoch) + '_lr_'+ str(args.lr)+'_'+str(formatted_time)+'.txt', scores_tensor.cpu().detach().numpy())
-np.savetxt('./scores_save/softsort_normal_epoch_' + str(args.max_epoch) + '_lr_'+ str(args.lr)+'_'+str(formatted_time)+'.txt', scores_tensor_normal.cpu().detach().numpy())
+np.savetxt('./scores_save/softsort_normal_epoch_' + str(args.max_epoch) + '_lr_'+ str(args.lr)+'_'+str(formatted_time)+'.txt', scores_tensor_scores.cpu().detach().numpy())
 
 
 location_list_a = np.array(location_list)
 un_location_list_a = np.array(un_location_list)
-plt.scatter(un_location_list_a[:,0], un_location_list_a[:,1], s=15, c=scores_tensor_normal.detach().numpy(), cmap='Greens')
+plt.scatter(un_location_list_a[:,0], un_location_list_a[:,1], s=15, c=scores_tensor_scores.cpu().detach().numpy(), cmap='Greens')
 plt.scatter(location_list_a[:select_node,0], location_list_a[:select_node,1], s=20, c='#f44336')  # selected_node
 plt.xlabel('Longitude')
 plt.ylabel('Latitude')
