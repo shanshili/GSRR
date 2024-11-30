@@ -79,7 +79,7 @@ un_location_list = find_value_according_index_list(location, unselected_node)
 
 args.input_dim = data_num
 print('input_dim: ',args.input_dim)
-model_path = './model_save/_e_250_l_1e-05_20241127_184058.pth'
+model_path = './model_save/_e_100_l_3e-07_20241128_101450.pth'#_e_350_l_1e-06_20241127_180601.pth'#_e_250_l_1e-05_20241127_184058.pth'
 ILGR = ILGRModel(args.input_dim, args.hidden_dim, args.output_dim, args.num_layer, args).to(device)
 ILGR = torch.load(model_path)
 ILGR.eval()

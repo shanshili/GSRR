@@ -11,6 +11,7 @@ import sys
 import matplotlib.pyplot as plt
 import time
 from torch.optim.lr_scheduler import ReduceLROnPlateau
+import torch.nn.functional as F
 
 # 将外部包的路径添加到 sys.path
 sys.path.append('D:\Tjnu-p\ML-learning\similarity2\MGC-RM')
@@ -25,7 +26,8 @@ test1:
 增加层数
 test2:  "--num_layer", default=2
 修改GAT
-
+test3:
+ranknet
 
 """
 test = 'test2'
@@ -45,7 +47,7 @@ parser = argparse.ArgumentParser(
     description="train", formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
 parser.add_argument("--max_epoch", type=int, default=100)
-parser.add_argument("--lr", type=float, default=1e-6)
+parser.add_argument("--lr", type=float, default=1e-7)
 parser.add_argument("--hidden_dim", default=1000, type=int)
 parser.add_argument("--output_dim", default=50, type=int)
 parser.add_argument("--num_layer", default=2, type=int)
@@ -148,6 +150,7 @@ for epoch in range(args.max_epoch):  # 假设训练100个epoch
     # 分数，排序
     # loss = ranking_loss(scores_tensor, criticality_scores)
 
+    """
     # CrossEntropy loss
     # 预测分数的排序值
     scores_tensor_normal = (scores_tensor_scores - torch.min(scores_tensor_scores)) / (torch.max(scores_tensor_scores) - torch.min(scores_tensor_scores))
@@ -164,6 +167,35 @@ for epoch in range(args.max_epoch):  # 假设训练100个epoch
     r_ij_tensor = torch.stack(r_ij, dim=0).requires_grad_(True).to(device)
     y_hat_ij_tensor = torch.stack(y_hat_ij, dim=0).requires_grad_(True).to(device)
     loss = loss_CrossEntropy(y_hat_ij_tensor, r_ij_tensor)
+    
+    """
+    # 预测分数的排序值
+    scores_tensor_normal = (scores_tensor_scores - torch.min(scores_tensor_scores)) / (torch.max(scores_tensor_scores) - torch.min(scores_tensor_scores))
+    r_ij = []  # 真实值
+    y_hat_ij = []  # 预测值
+    x = 0
+    # 指示函数
+    for i in range(len(scores_tensor_normal) - 1):
+        for j in range(i + 1, len(scores_tensor_normal) - 1):
+            if (criticality_scores_normal[i] > criticality_scores_normal[j]):
+                r_ij.append(1)
+            else:
+                r_ij.append(-1)
+            # if (scores_tensor_normal[i] > scores_tensor_normal[j]):
+            #     y_hat_ij.append(1)
+            # else:
+            #     y_hat_ij.append(-1)
+            y_hat_ij.append(scores_tensor_normal[i] - scores_tensor_normal[j])
+    # print(r_ij)
+    r_ij_tensor = torch.tensor(r_ij,dtype=torch.long)
+    p_r_ij = 0.5*(1+r_ij_tensor)
+    # y_hat_ij_tensor = torch.tensor(y_hat_ij,dtype=torch.long)
+    # p_y_ij = 0.5 * (1 + y_hat_ij_tensor)
+    y_hat_ij_tensor = torch.stack(y_hat_ij, dim=0).requires_grad_(True).to(device)
+    p_y_ij = F.sigmoid(y_hat_ij_tensor)
+    loss = -p_r_ij * torch.log(p_y_ij) - (1 - p_r_ij) * torch.log(1-p_y_ij)
+    loss= loss.sum()
+    # loss = loss_CrossEntropy(y_hat_ij_tensor, p_r_ij)
 
     loss.backward(retain_graph=True)
     optimizer.step()

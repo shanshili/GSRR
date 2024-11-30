@@ -38,7 +38,7 @@ parser = argparse.ArgumentParser(
     description="train", formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
 parser.add_argument("--max_epoch", type=int, default=100)
-parser.add_argument("--lr", type=float, default=1e-2)
+parser.add_argument("--lr", type=float, default=3e-7)
 parser.add_argument("--hidden_dim", default=1000, type=int)
 parser.add_argument("--output_dim", default=50, type=int)
 parser.add_argument("--num_layer", default=2, type=int)
@@ -139,29 +139,29 @@ for epoch in range(args.max_epoch):  # 假设训练100个epoch
     optimizer.zero_grad()
 
     # 排序，排序
-    loss = ranking_loss2(scores_tensor_scores, criticality_scores)
+    # loss = ranking_loss2(scores_tensor_scores, criticality_scores)
     # 分数，分数
     # loss = ranking_loss(scores_tensor, R_Rg_tensor)
     # 分数，排序
     # loss = ranking_loss(scores_tensor, criticality_scores)
 
-    # # CrossEntropy loss
-    # # 预测分数的排序值
-    # scores_tensor_normal = (scores_tensor_scores - torch.min(scores_tensor_scores)) / (torch.max(scores_tensor_scores) - torch.min(scores_tensor_scores))
-    # # 预测分数的分数值
-    # #scores_tensor_normal = (scores_tensor - torch.min(scores_tensor)) / (torch.max(scores_tensor) - torch.min(scores_tensor))
-    # r_ij = [] # 真实值
-    # y_hat_ij = []  # 预测值
-    # x = 0
-    # for i in range(len(scores_tensor_normal)-1):
-    #     for j in range(i + 1, len(scores_tensor_normal)-1):
-    #         r_ij.append(criticality_scores_normal[i] - criticality_scores_normal[j])
-    #         y_hat_ij.append(scores_tensor_normal[i] - scores_tensor_normal[j])
-    #         x+=x
-    # r_ij_tensor = torch.stack(r_ij, dim=0).requires_grad_(True).to(device)
-    # y_hat_ij_tensor = torch.stack(y_hat_ij, dim=0).requires_grad_(True).to(device)
-    # loss = loss_CrossEntropy(y_hat_ij_tensor, r_ij_tensor)
-    # print(loss.item())
+    # CrossEntropy loss
+    # 预测分数的排序值
+    scores_tensor_normal = (scores_tensor_scores - torch.min(scores_tensor_scores)) / (torch.max(scores_tensor_scores) - torch.min(scores_tensor_scores))
+    # 预测分数的分数值
+    #scores_tensor_normal = (scores_tensor - torch.min(scores_tensor)) / (torch.max(scores_tensor) - torch.min(scores_tensor))
+    r_ij = [] # 真实值
+    y_hat_ij = []  # 预测值
+    x = 0
+    for i in range(len(scores_tensor_normal)-1):
+        for j in range(i + 1, len(scores_tensor_normal)-1):
+            r_ij.append(criticality_scores_normal[i] - criticality_scores_normal[j])
+            y_hat_ij.append(scores_tensor_normal[i] - scores_tensor_normal[j])
+            x+=x
+    r_ij_tensor = torch.stack(r_ij, dim=0).requires_grad_(True).to(device)
+    y_hat_ij_tensor = torch.stack(y_hat_ij, dim=0).requires_grad_(True).to(device)
+    loss = loss_CrossEntropy(y_hat_ij_tensor, r_ij_tensor)
+    print(loss.item())
 
     loss.backward(retain_graph=True)
     optimizer.step()
@@ -196,7 +196,7 @@ np.savetxt('./scores_save/softsort_normal_epoch_' + str(args.max_epoch) + '_lr_'
 
 location_list_a = np.array(location_list)
 un_location_list_a = np.array(un_location_list)
-plt.scatter(un_location_list_a[:,0], un_location_list_a[:,1], s=15, c=scores_tensor_scores.detach().numpy(), cmap='Greens')
+plt.scatter(un_location_list_a[:,0], un_location_list_a[:,1], s=15, c=scores_tensor_normal.detach().numpy(), cmap='Greens')
 plt.scatter(location_list_a[:select_node,0], location_list_a[:select_node,1], s=20, c='#f44336')  # selected_node
 plt.xlabel('Longitude')
 plt.ylabel('Latitude')
