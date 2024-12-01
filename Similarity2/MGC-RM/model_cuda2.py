@@ -217,7 +217,7 @@ def ranking_loss(scores1, true_ranks1):
 
 
 # 加权损失函数
-def ranking_loss2(scores1, true_ranks1):
+def ranking_loss2(scores, true_ranks):
     loss = 0
     loss2 = 0
     #w1
@@ -227,18 +227,17 @@ def ranking_loss2(scores1, true_ranks1):
     k = 30
     beta = 6.9
     #w3
-    k =10# 13.5# 10.8# 24.8# 38# 50 # 17.9# 17.9 # 8.5
+    k =50# 13.5# 10.8# 24.8# 38# 50 # 17.9# 17.9 # 8.5
     a =70# 14.2# 13.1 #21.7# 21.7# 38# 50# 29# 50
     # 归一化
     # true_ranks = true_ranks1
-    true_ranks = (true_ranks1 - torch.min(true_ranks1)) / (torch.max(true_ranks1) - torch.min(true_ranks1))
-    scores = (scores1 - torch.min(scores1)) / (torch.max(scores1) - torch.min(scores1))
+
     for i in range(len(scores)-1):
         for j in range(i + 1, len(scores)-1):
             r_ij = true_ranks[i] - true_ranks[j]
             # w = k*torch.exp(-beta*(true_ranks[i]**2+true_ranks[j]**2))  #w1
             # w = k*torch.exp(-beta*(true_ranks[i]+true_ranks[j]))   #w2
-            w = k*(1/( (1+a*torch.abs(true_ranks[i])) * (1+a*torch.abs(true_ranks[j]))  ) ) #w3
+            w = k*(1/( (1+a*torch.abs(1-true_ranks[i])) * (1+a*torch.abs(1-true_ranks[j]))  ) ) #w3
             y_hat_ij = scores[i] - scores[j]
             f_r_ij = F.sigmoid(r_ij)
             # print(true_ranks[i].item(),true_ranks[j].item(),'\n',w.item())

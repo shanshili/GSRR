@@ -59,8 +59,8 @@ un_location_list_a = np.array(un_location_list)
 
 file_criticality_scores_normal = 'criticality_scores_normal_99'
 file_R_Rg_tensor = 'R_Rg_tensor_99'
-file_scores = 'scores_epoch_200_lr_1e-06_20241125_105756'
-file_softsort_normal = 'softsort_normal_epoch_200_lr_1e-06_20241125_105756'
+file_scores = 'scores_epoch_350_lr_1e-06_20241127_180601'# 'scores_epoch_200_lr_1e-06_20241125_105756'
+file_softsort_normal = 'softsort_normal_epoch_350_lr_1e-06_20241127_180601'# 'softsort_normal_epoch_200_lr_1e-06_20241125_105756'
 criticality_scores_normal = []
 R_Rg_tensor = []
 with open('./robustness_score/'+file_criticality_scores_normal+'.txt', 'r') as f:
@@ -80,6 +80,11 @@ with open('./scores_save/'+file_softsort_normal+'.txt', 'r') as f:
         softsort_normal.append(float(list(line.strip('\n').split(','))[0]))
 
 
+softsort_normal = np.argsort(softsort_normal)
+criticality_scores_normal = np.argsort(criticality_scores_normal)
+
+
+
 colors = 'Greens'
 plt.scatter(un_location_list_a[:,0], un_location_list_a[:,1], s=15, c=scores, cmap= colors)
 plt.scatter(location_list_a[:,0], location_list_a[:,1], s=20, c='#f44336')  # selected_node
@@ -87,7 +92,7 @@ plt.xlabel('Longitude')
 plt.ylabel('Latitude')
 plt.colorbar()
 plt.title('scores')
-plt.savefig('./scores_save/'+file_scores+'.svg', format='svg')
+plt.savefig('./scores_save/2'+file_scores+'.svg', format='svg')
 plt.show()
 
 plt.scatter(un_location_list_a[:,0], un_location_list_a[:,1], s=15, c=softsort_normal, cmap=colors)
@@ -96,7 +101,7 @@ plt.xlabel('Longitude')
 plt.ylabel('Latitude')
 plt.colorbar()
 plt.title('softsort_normal')
-plt.savefig('./scores_save/'+file_softsort_normal+'.svg', format='svg')
+plt.savefig('./scores_save/2'+file_softsort_normal+'.svg', format='svg')
 plt.show()
 
 plt.scatter(un_location_list_a[:,0], un_location_list_a[:,1], s=15, c=R_Rg_tensor, cmap=colors)
@@ -105,7 +110,7 @@ plt.xlabel('Longitude')
 plt.ylabel('Latitude')
 plt.colorbar()
 plt.title('R_Rg_tensor')
-plt.savefig('./robustness_score/'+file_R_Rg_tensor+'.svg', format='svg')
+plt.savefig('./robustness_score/2'+file_R_Rg_tensor+'.svg', format='svg')
 plt.show()
 
 plt.scatter(un_location_list_a[:,0], un_location_list_a[:,1], s=15, c=criticality_scores_normal, cmap=colors)
@@ -114,5 +119,5 @@ plt.xlabel('Longitude')
 plt.ylabel('Latitude')
 plt.colorbar()
 plt.title('criticality_scores_normal')
-plt.savefig('./robustness_score/'+file_criticality_scores_normal+'.svg', format='svg')
+plt.savefig('./robustness_score/2'+file_criticality_scores_normal+'.svg', format='svg')
 plt.show()

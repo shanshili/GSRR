@@ -84,9 +84,9 @@ model list:
 _e_350_l_1e-06_20241127_180601.pth
 _e_250_l_1e-05_20241127_184058.pth
 _e_100_l_3e-07_20241128_101450.pth
-
+test3_e_100_l_1e-07_20241201_210513
 """
-model_path = './model_save/_e_100_l_3e-07_20241128_101450.pth'
+model_path = './model_save/test3_e_100_l_1e-07_20241201_210513.pth'
 ILGR = ILGRModel(args.input_dim, args.hidden_dim, args.output_dim, args.num_layer, args).to(device)
 ILGR = torch.load(model_path)
 ILGR.eval()
