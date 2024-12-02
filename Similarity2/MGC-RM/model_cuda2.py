@@ -5,7 +5,8 @@ from torch_geometric.nn import GATConv
 import numpy as np
 from scipy.special import comb
 from torch_geometric.utils import k_hop_subgraph
-
+import sys
+from pprint import pprint
 
 class AttentionLayer(nn.Module):
     def __init__(self, input_dim, hidden_dim):
@@ -208,7 +209,31 @@ def ranking_loss(scores1, true_ranks1):
         for j in range(i + 1, len(scores)-1):
             r_ij = true_ranks[i] - true_ranks[j]
             y_hat_ij = scores[i] - scores[j]
-            f_r_ij = F.sigmoid(r_ij)
+            f_r_ij = F.sigmoid(r_ij)  # 排序差值越大，f_r_ij越接近1或0
+            """
+            f_r_ij：真实差值趋势 
+                true_ranks[i] > true_ranks[j] 0.5+ 向1 排序越前
+                true_ranks[i] < true_ranks[j] 0.5- 向0
+            (1 - f_r_ij)
+                true_ranks[i] > true_ranks[j] 0.5- 向0 排序越前
+                true_ranks[i] < true_ranks[j] 0.5+ 向1
+            F.sigmoid(y_hat_ij)：预测差值趋势
+                scores[i] > scores[j] 0.5+ 向1 排序越前 log()向0  loss↓
+                scores[i] < scores[j] 0.5- 向0 排序越前 log()向-∞  loss↑
+            (1-F.sigmoid(y_hat_ij)                 
+                scores[i] > scores[j] 0.5- 向0 排序越前 log()向-∞  
+                scores[i] < scores[j] 0.5+ 向1 排序越前 log()向0  
+            f_r_ij*log():
+                >,>: 0          1，0.5+：0.5+     0.5+，1：0.5+     0.5+,0.5+:0.25+    同向，数值有差别，损失相对小 
+                >,<: loss       1，0.5-：0.5-     1，0：0                                    反向，损失更大
+                <,<: 0          0.5-，0：0        0.5-,0.5-:0.25+
+                <,>: 0
+            (1-f_r_ij)*log(1-):
+                >,>: 0
+                >,<: 0
+                <,<: 0
+                <,>: loss
+            """
             loss += -f_r_ij * torch.log1p(F.sigmoid(y_hat_ij)-1) - (1 - f_r_ij) * torch.log1p(-F.sigmoid(y_hat_ij))
 
     return loss #  /int(comb(len(scores), 2))
@@ -240,8 +265,8 @@ def ranking_loss3(scores, true_ranks):
             y_hat_ij = scores[i] - scores[j]
             f_r_ij = F.sigmoid(r_ij)
             # print(true_ranks[i].item(),true_ranks[j].item(),'\n',w.item())
-            loss +=  -w*f_r_ij * torch.log1p(F.sigmoid(y_hat_ij)-1) - (1 - f_r_ij) * torch.log1p(-F.sigmoid(y_hat_ij))
-            # loss +=  w*(-f_r_ij * torch.log1p(F.sigmoid(y_hat_ij)-1) - (1 - f_r_ij) * torch.log1p(-F.sigmoid(y_hat_ij)))
+            # loss +=  -w*f_r_ij * torch.log1p(F.sigmoid(y_hat_ij)-1) - (1 - f_r_ij) * torch.log1p(-F.sigmoid(y_hat_ij))
+            loss +=  w*(-f_r_ij * torch.log1p(F.sigmoid(y_hat_ij)-1) - (1 - f_r_ij) * torch.log1p(-F.sigmoid(y_hat_ij)))
             # loss2 += (-f_r_ij * torch.log1p(F.sigmoid(y_hat_ij) - 1) - (1 - f_r_ij) * torch.log1p(
             #     -F.sigmoid(y_hat_ij)))
             # print((-f_r_ij * torch.log1p(F.sigmoid(y_hat_ij) - 1) - (1 - f_r_ij) * torch.log1p(-F.sigmoid(y_hat_ij))).item())
@@ -267,6 +292,30 @@ def softsort(x, tau=0.1):
 
 def ranking_loss4(scores_tensor_normal,criticality_scores_normal,device):
     # test4
+    """
+    p_r_ij：真实差值趋势
+        true_ranks[i] > true_ranks[j] 向1 排序越前
+        true_ranks[i] < true_ranks[j] 向0
+    (1 - p_r_ij)
+        true_ranks[i] > true_ranks[j] 向0 排序越前
+        true_ranks[i] < true_ranks[j] 向1
+    F.sigmoid(y_hat_ij)：预测差值趋势
+        scores[i] > scores[j] 向1 排序越前 log()向0  loss↓
+        scores[i] < scores[j] 向0 排序越前 log()向-∞  loss↑
+    (1-F.sigmoid(y_hat_ij)
+        scores[i] > scores[j] 向0 排序越前 log()向-∞
+        scores[i] < scores[j] 向1 排序越前 log()向0
+    p_r_ij*log():
+        >,>: 0
+        >,<: loss
+        <,<: 0
+        <,>: 0
+    (1-p_r_ij)*log(1-):
+        >,>: 0
+        >,<: 0
+        <,<: 0
+        <,>: loss
+    """
     r_ij = []  # 真实值
     y_hat_ij = []  # 预测值
     # 指示函数
@@ -289,47 +338,71 @@ def ranking_loss4(scores_tensor_normal,criticality_scores_normal,device):
     # loss = loss_CrossEntropy(p_y_ij, p_r_ij)
     return loss
 
+
+def dcg_score(y):
+    """Discounted Cumulative Gain (DCG)"""
+    # gains = 2 ** y_true - 1
+    gains = 1
+    discounts = np.log2(y + 2)
+    # discounts = np.log2(np.arange(len(y)) + 2)
+    return np.sum(gains / discounts)
+
+
+def ndcg_score(y_true, y_score):
+    """Normalized Discounted Cumulative Gain (NDCG)"""
+    best = dcg_score(y_true)
+    print('best',best)
+    actual = dcg_score(y_score)
+    print('actual',actual)
+    #print(actual,best)
+    return actual / best if best > 0 else 0.0
+
+
+def compute_lambda(y_true, y_pred):
+    """Compute the lambda value for each pair of documents."""
+    n = len(y_true)
+    lambdas = []
+    for i in (0, 1):
+        for j in range(i + 1, 5):
+            # Compute the NDCG difference when swapping positions
+            print('i',i,'j',j)
+            swap_y_true = np.copy(y_true)
+            swap_y_pred = np.copy(y_pred)
+            print(y_true[i], y_true[j])
+            print(y_pred[i], y_pred[j])
+            swap_y_true[i], swap_y_true[j] = swap_y_true[j], swap_y_true[i]
+            swap_y_pred[i], swap_y_pred[j] = swap_y_pred[j], swap_y_pred[i]
+
+            # print(y_true, y_pred)
+            ndcg_before = ndcg_score(y_true, y_pred)
+            # print(ndcg_before)
+            ndcg_after = ndcg_score(swap_y_true, swap_y_pred)
+            # print(ndcg_after)
+
+            delta_ndcg = ndcg_after - ndcg_before
+            if y_true[i] > y_true[j]:
+                 lambdas.append(-delta_ndcg)
+                 print('-',-delta_ndcg)
+            else:
+                 lambdas.append(delta_ndcg)
+                 print(' ',delta_ndcg)
+
+            lambdas.append(delta_ndcg)
+    print(lambdas)
+
+    return np.array(lambdas)
+
 def ranking_loss5(scores_tensor_normal,criticality_scores_normal,device):
     # test5
-    def dcg_score(y_true):
-        """Discounted Cumulative Gain (DCG)"""
-        gains = 2 ** y_true - 1
-        discounts = np.log2(np.arange(len(y_true)) + 2)
-        return np.sum(gains / discounts)
-
-
-    def ndcg_score(y_true, y_score):
-        """Normalized Discounted Cumulative Gain (NDCG)"""
-        best = dcg_score(y_true)
-        actual = dcg_score(y_score)
-        return actual / best if best > 0 else 0.0
-
-
-    def compute_lambda(y_true, y_pred):
-        """Compute the lambda value for each pair of documents."""
-        n = len(y_true)
-        lambdas = []
-        for i in range(n-1):
-            for j in range(i + 1, n-1):
-                # Compute the NDCG difference when swapping positions
-                swap_y_true = np.copy(y_true)
-                swap_y_pred = np.copy(y_pred)
-                swap_y_true[i], swap_y_true[j] = swap_y_true[j], swap_y_true[i]
-                swap_y_pred[i], swap_y_pred[j] = swap_y_pred[j], swap_y_pred[i]
-
-                ndcg_before = ndcg_score(y_true, y_pred)
-                ndcg_after = ndcg_score(swap_y_true, swap_y_pred)
-
-                delta_ndcg = ndcg_after - ndcg_before
-                if y_true[i] > y_true[j]:
-                    lambdas.append(-delta_ndcg)
-                else:
-                    lambdas.append(delta_ndcg)
-        return np.array(lambdas)
+    # print('criticality_scores_normal',1-criticality_scores_normal)
 
     # 计算lambda值
-    lambdas = compute_lambda((1-criticality_scores_normal).detach().numpy(), (1-scores_tensor_normal).detach().numpy()) # 修正排序
+    lambdas = compute_lambda((1-criticality_scores_normal).detach().cpu().numpy(), (1-scores_tensor_normal).detach().cpu().numpy()) # 修正排序
+    # np.set_printoptions(threshold=np.inf)
+    # print('lambdas',lambdas)
+    pprint(criticality_scores_normal,width=sys.maxsize)
     lambdas = torch.tensor(lambdas, dtype=torch.float32).to(device)
+
 
     r_ij = []  # 真实值
     y_hat_ij = []  # 预测值
@@ -348,7 +421,7 @@ def ranking_loss5(scores_tensor_normal,criticality_scores_normal,device):
 
     # loss = lambdas * (- p_r_ij * torch.log(p_y_ij) - (1 - p_r_ij) * torch.log(1-p_y_ij))
     loss = -lambdas * p_r_ij * torch.log(p_y_ij) - (1 - p_r_ij) * torch.log(1 - p_y_ij)
-    print(loss)
+    # print(loss)
     loss= loss.sum()
     return loss
 
@@ -371,29 +444,29 @@ def ranking_loss53(scores_tensor_normal,criticality_scores_normal,device):
 
     def compute_lambda(y_true, y_pred):
         """Compute the lambda value for each pair of documents."""
-        n = len(y_true)
-        lambdas = []
-        for i in range(n-1):
-            for j in range(i + 1, n-1):
-                # Compute the NDCG difference when swapping positions
-                swap_y_true = np.copy(y_true)
-                swap_y_pred = np.copy(y_pred)
-                swap_y_true[i], swap_y_true[j] = swap_y_true[j], swap_y_true[i]
-                swap_y_pred[i], swap_y_pred[j] = swap_y_pred[j], swap_y_pred[i]
-
-                ndcg_before = ndcg_score(y_true, y_pred)
-                ndcg_after = ndcg_score(swap_y_true, swap_y_pred)
-
-                delta_ndcg = ndcg_after - ndcg_before
-                if y_true[i] > y_true[j]:
-                    lambdas.append(-delta_ndcg)
-                else:
-                    lambdas.append(delta_ndcg)
-        return np.array(lambdas)
-
-    # 计算lambda值
-    lambdas = compute_lambda((1-criticality_scores_normal).detach().numpy(), (1-scores_tensor_normal).detach().numpy()) # 修正排序
-    lambdas = torch.tensor(lambdas, dtype=torch.float32).to(device)
+    #     n = len(y_true)
+    #     lambdas = []
+    #     for i in range(n-1):
+    #         for j in range(i + 1, n-1):
+    #             # Compute the NDCG difference when swapping positions
+    #             swap_y_true = np.copy(y_true)
+    #             swap_y_pred = np.copy(y_pred)
+    #             swap_y_true[i], swap_y_true[j] = swap_y_true[j], swap_y_true[i]
+    #             swap_y_pred[i], swap_y_pred[j] = swap_y_pred[j], swap_y_pred[i]
+    #
+    #             ndcg_before = ndcg_score(y_true, y_pred)
+    #             ndcg_after = ndcg_score(swap_y_true, swap_y_pred)
+    #
+    #             delta_ndcg = ndcg_after - ndcg_before
+    #             if y_true[i] > y_true[j]:
+    #                 lambdas.append(-delta_ndcg)
+    #             else:
+    #                 lambdas.append(delta_ndcg)
+    #     return np.array(lambdas)
+    #
+    # # 计算lambda值
+    # lambdas = compute_lambda((1-criticality_scores_normal).detach().numpy(), (1-scores_tensor_normal).detach().numpy()) # 修正排序
+    # lambdas = torch.tensor(lambdas, dtype=torch.float32).to(device)
 
     r_ij = []  # 真实值
     y_hat_ij = []  # 预测值
@@ -415,7 +488,7 @@ def ranking_loss53(scores_tensor_normal,criticality_scores_normal,device):
     p_y_ij = F.sigmoid(y_hat_ij_tensor).to(device)
 
     # loss = lambdas * (- p_r_ij * torch.log(p_y_ij) - (1 - p_r_ij) * torch.log(1-p_y_ij))
-    loss = -lambdas * w * p_r_ij * torch.log(p_y_ij) - (1 - p_r_ij) * torch.log(1 - p_y_ij)
-    print(loss)
-    loss= loss.sum()
+    loss = -w * p_r_ij * torch.log(p_y_ij) - (1 - p_r_ij) * torch.log(1 - p_y_ij)
+    # print(loss)
+    loss = loss.sum()
     return loss

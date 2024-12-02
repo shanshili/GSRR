@@ -14,10 +14,10 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 import torch.nn.functional as F
 
 # 将外部包的路径添加到 sys.path
-sys.path.append('D:\Tjnu-p\ML-learning\similarity2\MGC-RM')
+sys.path.append('F:\Tjnu-p\ML-learning\similarity2\MGC-RM')
 # 现在可以导入外部包了
 from utils import find_value_according_index_list, robustness_score
-from model_cuda2 import (ILGRModel_test,softsort,ranking_loss,ranking_loss3,ranking_loss4,ranking_loss5)
+from model_cuda2 import (ILGRModel_test,softsort,ranking_loss,ranking_loss3,ranking_loss4,ranking_loss5,ranking_loss53)
 from GraphConstruct2 import location_graph
 
 from matplotlib import rcParams
@@ -30,16 +30,16 @@ test3:
 w(r_ij)自定义loss
 test3+:
 修正加权逻辑
-test3++：
+test3++：(x)考虑差值，权重应该两个方向都乘
 修改权重函数
 test4:
 ranknet
 test5:
 lambdarank
-test5:
-lambdarank+w(r_ij)
+test53:
+ranknet+w(r_ij)
 """
-test = 'test3++'
+test = 'test53'
 
 # 全局修改字体
 config = {
@@ -55,7 +55,7 @@ rcParams.update(config)
 parser = argparse.ArgumentParser(
     description="train", formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
-parser.add_argument("--max_epoch", type=int, default=200)
+parser.add_argument("--max_epoch", type=int, default=300)
 parser.add_argument("--lr", type=float, default=1e-7)
 parser.add_argument("--hidden_dim", default=1000, type=int)
 parser.add_argument("--output_dim", default=50, type=int)
@@ -155,9 +155,10 @@ for epoch in range(args.max_epoch):  # 假设训练100个epoch
     optimizer.zero_grad()
 
     # 排序，排序
-    loss = ranking_loss3(scores_tensor_normal, criticality_scores_normal)
+    # loss = ranking_loss3(scores_tensor_normal, criticality_scores_normal)
     # loss = ranking_loss4(scores_tensor_normal, criticality_scores_normal,device)
-    # loss = ranking_loss5(scores_tensor_normal, criticality_scores_normal,device)
+    # print(criticality_scores_normal)
+    loss = ranking_loss53(scores_tensor_normal, criticality_scores_normal, device)
     # 分数，分数
     # loss = ranking_loss(scores_tensor, R_Rg_tensor)
     # 分数，排序

@@ -419,7 +419,7 @@ def softsort(x, tau=0.1):
     return soft_sorted_x
 
 
-
+# test4
 def ranking_loss4(scores_tensor_normal,criticality_scores_normal,device):
     # test4
     r_ij = []  # 真实值
