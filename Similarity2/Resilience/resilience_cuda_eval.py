@@ -16,7 +16,7 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 sys.path.append('D:\Tjnu-p\ML-learning\similarity2\MGC-RM')
 # 现在可以导入外部包了
 from utils import find_value_according_index_list, robustness_score
-from model_cuda import ILGRModel, softsort
+from model_cuda import ILGRModel, softsort, ranking_loss5,ranking_loss3
 from GraphConstruct2 import location_graph
 
 from matplotlib import rcParams
@@ -73,7 +73,7 @@ location = location_file['arr_0']
 selected_node  = wpr_rank[:select_node]
 fea_list = find_value_according_index_list(fea_o, selected_node)
 location_list = find_value_according_index_list(location, selected_node)
-unselected_node = wpr_rank[114+1:214]
+unselected_node = wpr_rank[114+1:214]# [15:114]# [114+1:214]
 un_fea_list = find_value_according_index_list(fea_o, unselected_node)
 un_location_list = find_value_according_index_list(location, unselected_node)
 
@@ -85,8 +85,10 @@ _e_350_l_1e-06_20241127_180601.pth
 _e_250_l_1e-05_20241127_184058.pth
 _e_100_l_3e-07_20241128_101450.pth
 test3_e_100_l_1e-07_20241201_210513
+test5_e_400_l_1e-07_20241202_101508
+test3_e_200_l_1e-07_20241201_212333
 """
-model_path = './model_save/test3_e_100_l_1e-07_20241201_210513.pth'
+model_path = './model_save/_e_350_l_1e-06_20241127_180601.pth'
 ILGR = ILGRModel(args.input_dim, args.hidden_dim, args.output_dim, args.num_layer, args).to(device)
 ILGR = torch.load(model_path)
 ILGR.eval()
@@ -133,33 +135,33 @@ with torch.no_grad():
         tensors.append(scores[i])
     scores_tensor = torch.stack(tensors, dim=0).requires_grad_(True).to(device)
     # 预测分数的排序
-    scores_tensor_scores = softsort(scores_tensor)
+    scores_tensor_scores = softsort(scores_tensor) # 数值逆序
+    scores_tensor_normal = (scores_tensor_scores - torch.min(scores_tensor_scores)) / (torch.max(scores_tensor_scores) - torch.min(scores_tensor_scores))
+
 
     # 排序，排序
-    # loss = ranking_loss(scores_tensor_scores, criticality_scores)
+    # loss = ranking_loss3(scores_tensor_normal, scores_tensor_normal)
+    # loss = ranking_loss5(scores_tensor_normal, criticality_scores_normal,device)
     # 分数，分数
     # loss = ranking_loss(scores_tensor, R_Rg_tensor)
     # 分数，排序
     # loss = ranking_loss(scores_tensor, criticality_scores)
 
+    """
     # CrossEntropy loss
-    # 预测分数的排序值
-    scores_tensor_normal = (scores_tensor_scores - torch.min(scores_tensor_scores)) / (torch.max(scores_tensor_scores) - torch.min(scores_tensor_scores))
-    # 预测分数的分数值
-    #scores_tensor_normal = (scores_tensor - torch.min(scores_tensor)) / (torch.max(scores_tensor) - torch.min(scores_tensor))
     r_ij = [] # 真实值
     y_hat_ij = []  # 预测值
-    x = 0
     for i in range(len(scores_tensor_normal)-1):
         for j in range(i + 1, len(scores_tensor_normal)-1):
             # print(true_ranks[j],true_ranks[j])
             r_ij.append(criticality_scores_normal[i] - criticality_scores_normal[j])
             y_hat_ij.append(scores_tensor_normal[i] - scores_tensor_normal[j])
-            x+=x
     r_ij_tensor = torch.stack(r_ij, dim=0).requires_grad_(True).to(device)
     y_hat_ij_tensor = torch.stack(y_hat_ij, dim=0).requires_grad_(True).to(device)
 
     loss = loss_CrossEntropy(y_hat_ij_tensor, r_ij_tensor)
+    """
+
     print(' loss: ' + str(loss.item()))
     print(torch.argsort(scores_tensor))
     print(torch.argsort(R_Rg_tensor))

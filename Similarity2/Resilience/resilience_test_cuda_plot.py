@@ -17,7 +17,7 @@ import torch.nn.functional as F
 sys.path.append('D:\Tjnu-p\ML-learning\similarity2\MGC-RM')
 # 现在可以导入外部包了
 from utils import find_value_according_index_list, robustness_score
-from model_cuda2 import (ILGRModel_test,softsort,ranking_loss,ranking_loss2)
+from model_cuda2 import (ILGRModel_test,softsort,ranking_loss,ranking_loss3,ranking_loss4,ranking_loss5)
 from GraphConstruct2 import location_graph
 
 from matplotlib import rcParams
@@ -28,13 +28,18 @@ test2:  "--num_layer", default=2
 修改GAT
 test3:
 w(r_ij)自定义loss
+test3+:
+修正加权逻辑
+test3++：
+修改权重函数
 test4:
 ranknet
 test5:
 lambdarank
-
+test5:
+lambdarank+w(r_ij)
 """
-test = 'test3'
+test = 'test3++'
 
 # 全局修改字体
 config = {
@@ -145,12 +150,14 @@ for epoch in range(args.max_epoch):  # 假设训练100个epoch
         tensors.append(scores[i])
     scores_tensor = torch.stack(tensors, dim=0).requires_grad_(True).to(device)
     # 预测分数的排序
-    scores_tensor_scores = softsort(scores_tensor)
+    scores_tensor_scores = softsort(scores_tensor) # 数值倒序
     scores_tensor_normal = (scores_tensor_scores - torch.min(scores_tensor_scores)) / (torch.max(scores_tensor_scores) - torch.min(scores_tensor_scores))
     optimizer.zero_grad()
 
     # 排序，排序
-    loss = ranking_loss2(scores_tensor_normal, criticality_scores_normal)
+    loss = ranking_loss3(scores_tensor_normal, criticality_scores_normal)
+    # loss = ranking_loss4(scores_tensor_normal, criticality_scores_normal,device)
+    # loss = ranking_loss5(scores_tensor_normal, criticality_scores_normal,device)
     # 分数，分数
     # loss = ranking_loss(scores_tensor, R_Rg_tensor)
     # 分数，排序
@@ -172,93 +179,6 @@ for epoch in range(args.max_epoch):  # 假设训练100个epoch
     
     """
 
-    """
-    # test4
-    r_ij = []  # 真实值
-    y_hat_ij = []  # 预测值
-    # 指示函数
-    for i in range(len(scores_tensor_normal) - 1):
-        for j in range(i + 1, len(scores_tensor_normal) - 1):
-            if (criticality_scores_normal[i] > criticality_scores_normal[j]):
-                r_ij.append(1)
-            else:
-                r_ij.append(-1)
-            # if (scores_tensor_normal[i] > scores_tensor_normal[j]):
-            #     y_hat_ij.append(1)
-            # else:
-            #     y_hat_ij.append(-1)
-            y_hat_ij.append(scores_tensor_normal[i] - scores_tensor_normal[j])
-    # print(r_ij)
-    r_ij_tensor = torch.tensor(r_ij,dtype=torch.long)
-    p_r_ij = (0.5*(1+r_ij_tensor)).to(device)
-    # y_hat_ij_tensor = torch.tensor(y_hat_ij,dtype=torch.long)
-    # p_y_ij = 0.5 * (1 + y_hat_ij_tensor)
-    y_hat_ij_tensor = torch.stack(y_hat_ij, dim=0).requires_grad_(True).to(device)
-    p_y_ij = F.sigmoid(y_hat_ij_tensor).to(device)
-    loss = -p_r_ij * torch.log(p_y_ij) - (1 - p_r_ij) * torch.log(1-p_y_ij)
-    loss= loss.sum()
-    # loss = loss_CrossEntropy(p_y_ij, p_r_ij)
-    """
-
-    # test5
-    def dcg_score(y_true):
-        """Discounted Cumulative Gain (DCG)"""
-        gains = 2 ** y_true - 1
-        discounts = np.log2(np.arange(len(y_true)) + 2)
-        return np.sum(gains / discounts)
-
-
-    def ndcg_score(y_true, y_score):
-        """Normalized Discounted Cumulative Gain (NDCG)"""
-        best = dcg_score(y_true)
-        actual = dcg_score(y_score)
-        return actual / best if best > 0 else 0.0
-
-
-    def compute_lambda(y_true, y_pred):
-        """Compute the lambda value for each pair of documents."""
-        n = len(y_true)
-        lambdas = []
-        for i in range(n-1):
-            for j in range(i + 1, n-1):
-                # Compute the NDCG difference when swapping positions
-                swap_y_true = np.copy(y_true)
-                swap_y_pred = np.copy(y_pred)
-                swap_y_true[i], swap_y_true[j] = swap_y_true[j], swap_y_true[i]
-                swap_y_pred[i], swap_y_pred[j] = swap_y_pred[j], swap_y_pred[i]
-
-                ndcg_before = ndcg_score(y_true, y_pred)
-                ndcg_after = ndcg_score(swap_y_true, swap_y_pred)
-
-                delta_ndcg = ndcg_after - ndcg_before
-                if y_true[i] > y_true[j]:
-                    lambdas.append(-delta_ndcg)
-                else:
-                    lambdas.append(delta_ndcg)
-        return np.array(lambdas)
-
-    # 计算lambda值
-    lambdas = compute_lambda(criticality_scores_normal.detach().numpy(), scores_tensor_normal.detach().numpy())
-    lambdas = torch.tensor(lambdas, dtype=torch.float32).to(device)
-
-    r_ij = []  # 真实值
-    y_hat_ij = []  # 预测值
-    # 指示函数
-    for i in range(len(scores_tensor_normal) - 1):
-        for j in range(i + 1, len(scores_tensor_normal) - 1):
-            if (criticality_scores_normal[i] > criticality_scores_normal[j]):
-                r_ij.append(1)
-            else:
-                r_ij.append(-1)
-            y_hat_ij.append(scores_tensor_normal[i] - scores_tensor_normal[j])
-    r_ij_tensor = torch.tensor(r_ij,dtype=torch.long)
-    p_r_ij = (0.5*(1+r_ij_tensor)).to(device)
-    y_hat_ij_tensor = torch.stack(y_hat_ij, dim=0).requires_grad_(True).to(device)
-    p_y_ij = F.sigmoid(y_hat_ij_tensor).to(device)
-
-
-    loss = -lambdas * p_r_ij * torch.log(p_y_ij) - (1 - p_r_ij) * torch.log(1-p_y_ij)
-    loss= loss.sum()
 
 
     loss.backward(retain_graph=True)
