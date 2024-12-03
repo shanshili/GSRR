@@ -17,7 +17,7 @@ import torch.nn.functional as F
 sys.path.append('F:\Tjnu-p\ML-learning\similarity2\MGC-RM')
 # 现在可以导入外部包了
 from utils import find_value_according_index_list, robustness_score
-from model_cuda2 import (ILGRModel_test,softsort,ranking_loss,ranking_loss3,ranking_loss4,ranking_loss5,ranking_loss53)
+from model_cuda2 import (ILGRModel_test,softsort,ranking_loss,ranking_loss3,ranking_loss4,ranking_loss5,ranking_loss43)
 from GraphConstruct2 import location_graph
 
 from matplotlib import rcParams
@@ -39,7 +39,7 @@ lambdarank
 test53:
 ranknet+w(r_ij)
 """
-test = 'test53'
+test = 'BCE+t4'
 
 # 全局修改字体
 config = {
@@ -55,12 +55,12 @@ rcParams.update(config)
 parser = argparse.ArgumentParser(
     description="train", formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
-parser.add_argument("--max_epoch", type=int, default=700)
+parser.add_argument("--max_epoch", type=int, default=410)
 parser.add_argument("--lr", type=float, default=1e-7)
 parser.add_argument("--hidden_dim", default=1000, type=int)
 parser.add_argument("--output_dim", default=50, type=int)
 parser.add_argument("--num_layer", default=2, type=int)
-parser.add_argument("--weight_decay", type=int, default=1e-4)
+parser.add_argument("--weight_decay", type=float, default=1e-3)
 args = parser.parse_args()
 args.cuda = torch.cuda.is_available()
 print("use cuda: {}".format(args.cuda))
@@ -105,8 +105,9 @@ args.input_dim = data_num
 print('input_dim: ',args.input_dim)
 ILGR_model_test = ILGRModel_test(args.input_dim, args.hidden_dim, args.output_dim, args.num_layer, args).to(device)
 optimizer = torch.optim.Adam(ILGR_model_test.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-loss_CrossEntropy = nn.CrossEntropyLoss()
-scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=1, cooldown = 1,verbose=True)
+# loss_CrossEntropy = nn.CrossEntropyLoss()
+loss_CrossEntropy = nn.BCEWithLogitsLoss()
+scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.01, patience=1, cooldown = 1,verbose=True)
 
 # 重新构图，摘取特征值，计算关键性评分（弹性分数）
 R_g = [[] for _ in range(len(unselected_node))]
@@ -158,7 +159,7 @@ for epoch in range(args.max_epoch):  # 假设训练100个epoch
     # loss = ranking_loss3(scores_tensor_normal, criticality_scores_normal)
     # loss = ranking_loss4(scores_tensor_normal, criticality_scores_normal,device)
     # print(criticality_scores_normal)
-    loss = ranking_loss53(scores_tensor_normal, criticality_scores_normal, device)
+    # loss = ranking_loss53(scores_tensor_normal, criticality_scores_normal, device)
     # 分数，分数
     # loss = ranking_loss(scores_tensor, R_Rg_tensor)
     # 分数，排序
@@ -168,17 +169,33 @@ for epoch in range(args.max_epoch):  # 假设训练100个epoch
     # CrossEntropy loss
     r_ij = [] # 真实值
     y_hat_ij = []  # 预测值
-    x = 0
     for i in range(len(scores_tensor_normal)-1):
         for j in range(i + 1, len(scores_tensor_normal)-1):
             r_ij.append(criticality_scores_normal[i] - criticality_scores_normal[j])
             y_hat_ij.append(scores_tensor_normal[i] - scores_tensor_normal[j])
-            x+=x
     r_ij_tensor = torch.stack(r_ij, dim=0).requires_grad_(True).to(device)
     y_hat_ij_tensor = torch.stack(y_hat_ij, dim=0).requires_grad_(True).to(device)
     loss = loss_CrossEntropy(y_hat_ij_tensor, r_ij_tensor)
-    
     """
+
+
+    # CrossEntropy loss  + netrank
+    r_ij = [] # 真实值
+    y_hat_ij = []  # 预测值
+    for i in range(len(scores_tensor_normal) - 1):
+        for j in range(i + 1, len(scores_tensor_normal) - 1):
+            if (criticality_scores_normal[i] > criticality_scores_normal[j]):
+                r_ij.append(1)
+            else:
+                r_ij.append(-1)
+            y_hat_ij.append(scores_tensor_normal[i] - scores_tensor_normal[j])
+    # r_ij_tensor = torch.tensor(r_ij,dtype=torch.long)
+    r_ij_tensor = torch.tensor(r_ij,dtype=torch.float).to(device)
+    # p_r_ij = (0.5*(1+r_ij_tensor)).to(device)
+    y_hat_ij_tensor = torch.stack(y_hat_ij, dim=0).requires_grad_(True).to(device)
+    # p_y_ij = F.sigmoid(y_hat_ij_tensor).to(device)
+    # loss = loss_CrossEntropy(p_y_ij, p_r_ij)
+    loss = loss_CrossEntropy(y_hat_ij_tensor, r_ij_tensor)
 
 
 
