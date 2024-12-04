@@ -165,7 +165,7 @@ with torch.no_grad():
     """
 
     print(' loss: ' + str(loss.item()))
-    print(torch.argsort(scores_tensor))
+    print(torch.argsort(scores_tensor))   #### 有误
     print(torch.argsort(R_Rg_tensor))
 
 
@@ -175,5 +175,5 @@ localtime = time.localtime(timestamp)
 formatted_time = time.strftime('%Y%m%d_%H%M%S',localtime)
 
 # Save
-np.savetxt('./eval/eval_ep_' + str(args.max_epoch) + '_lr_'+ str(args.lr)+'_'+str(len(unselected_node))+'_'+str(formatted_time)+'.txt', torch.argsort(scores_tensor).cpu(), fmt='%d')
+np.savetxt('./eval/eval_ep_' + str(args.max_epoch) + '_lr_'+ str(args.lr)+'_'+str(len(unselected_node))+'_'+str(formatted_time)+'.txt', scores_tensor.cpu(), fmt='%d')
 

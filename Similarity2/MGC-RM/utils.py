@@ -558,6 +558,21 @@ def robustness_score(graph):
     Rg = (2 / (N - 1)) * ((N - c) / sum_reciprocal_nonzero)
     return Rg
 
+def robustness_score2(G):
+    """Calculate the robustness metric Rg for a given graph."""
+    # Calculate the Laplacian matrix of the graph
+    laplacian = nx.laplacian_matrix(G).toarray()
+    # Compute the eigenvalues of the Laplacian matrix
+    eigenvalues = np.linalg.eigvalsh(laplacian)
+    # Filter out the zero eigenvalues
+    non_zero_eigenvalues = eigenvalues[eigenvalues > 0]
+    N = G.number_of_nodes()
+    sum_reciprocals = np.sum(1 / non_zero_eigenvalues)
+    # Calculate the R_g score
+    rg_score = (2 / (N - 1)) * sum_reciprocals
+    return rg_score
+
+
 """
 W_s
 """

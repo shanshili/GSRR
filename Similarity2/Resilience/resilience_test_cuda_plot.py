@@ -95,7 +95,7 @@ location = location_file['arr_0']
 selected_node  = wpr_rank[:select_node]
 fea_list = find_value_according_index_list(fea_o, selected_node)
 location_list = find_value_according_index_list(location, selected_node)
-unselected_node = wpr_rank[select_node+1:114]
+unselected_node = wpr_rank[select_node+1:114]   # 相对重要的前100个
 un_fea_list = find_value_according_index_list(fea_o, unselected_node)
 un_location_list = find_value_according_index_list(location, unselected_node)
 
@@ -232,7 +232,7 @@ np.savetxt('./scores_save/softsort_normal_epoch_' + str(args.max_epoch) + '_lr_'
 location_list_a = np.array(location_list)
 un_location_list_a = np.array(un_location_list)
 plt.scatter(un_location_list_a[:,0], un_location_list_a[:,1], s=15, c=scores_tensor_normal.cpu().detach().numpy(), cmap='Greens')
-plt.scatter(location_list_a[:(select_node-1),0], location_list_a[:(select_node-1),1], s=20, c='#f44336')  # selected_node
+plt.scatter(location_list_a[:,0], location_list_a[:,1], s=20, c='#f44336')  # selected_node
 plt.xlabel('Longitude')
 plt.ylabel('Latitude')
 plt.colorbar()

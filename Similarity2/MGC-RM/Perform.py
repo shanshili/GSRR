@@ -6,7 +6,7 @@ import networkx as nx
 from utils import (find_value_according_index_list,
                    natural_connectivity2,network_life,
                    MSE_node_feature,mean_squared_error,DS2,DS3,
-                   MSE_all_node_feature,calculate_aec)
+                   MSE_all_node_feature,calculate_aec,robustness_score,robustness_score2)
 from GraphConstruct2 import location_graph
 from sklearn.neighbors import NearestNeighbors
 from model import AutoEncoder
@@ -62,6 +62,7 @@ AEC_2 = [None] * (int(len(node_list)) + 1)
 mse = [None] * (int(len(node_list)) + 1)
 mse_all_node = [None] * (int(len(node_list)) + 1)
 Ds = [None] * (int(len(node_list)) + 1)
+Rg = [None] * (int(len(node_list)) + 1)
 x = [None] * (int(len(node_list)) + 1)
 i = 0 # 采样计数
 """
@@ -85,6 +86,7 @@ for select_node in range(0,100,1):
         # Ds[i] = DS(np.array(location_list)[:, 0],np.array(location_list)[:, 1], select_node + 1)
         Ds[i] = DS2(g[i], select_node + 1)
         # Ds[i] = DS3(location_list, select_node + 1)
+        Rg[i] = robustness_score(g[i])
         # print(mse[i])
         # print(mse_all_node[i])
         # print(communicate_circle[i],res_energy_avg[i])
@@ -106,6 +108,7 @@ for select_node in range(0,100,1):
         # Ds[i] = DS(np.array(location_list)[:, 0],np.array(location_list)[:, 1], select_node + 1)
         Ds[i] = DS2(g[i], select_node + 1)
         # Ds[i] = DS3(location_list, select_node + 1)
+        # Rg[i] = robustness_score2(g[i])
 
         # print(mse[i])
         # print(mse_all_node[i])
@@ -163,6 +166,7 @@ fig, conn = plt.subplots(figsize=(8, 4))
 mse_ax = conn.twinx()
 aec_2 = conn.twinx()
 ds_ax = conn.twinx()
+rg_ax = conn.twinx()
 # mse_all_ax = conn.twinx()
 
 # cc.spines['right'].set_position(('outward', 40))
@@ -179,6 +183,7 @@ line_AEC2 = aec_2.plot(x, AEC_2, marker = '.',markerfacecolor='white', label='AE
 # line_mse = mse_ax.plot(x, mse,marker = '.',markerfacecolor='white', label='MSE', color='#FFA500')
 line_ds = ds_ax.plot(x, Ds,marker = '.',markerfacecolor='white', label='Ds', color='#00FFFF')
 # line_mse_all = mse_all_ax.plot(x, mse_all_node,marker = '.', markerfacecolor='white', label='mse_all', color='#FF1493')
+line_rg = ds_ax.plot(x, Rg,marker = '.',markerfacecolor='white', label='Rg', color='#FFA500')
 
 # conn.axvline(6, c='#E89B9E', ls='--')
 # plt.text(6,0,'6+')
@@ -198,7 +203,7 @@ aec_2.set_ylabel('AEC')
 # mse_ax.set_ylabel('MSE')
 ds_ax.set_ylabel('Ds')
 # mse_all_ax.set_ylabel(' mse2')
-
+rg_ax.set_ylabel('rg')
 
 # 设置坐标轴名
 conn.set_xlabel('Number of nodes')
@@ -206,12 +211,12 @@ plt.title('Reference indicators')
 
 
 # 设置图例
-lines =  line_CONN+line_AEC2+line_ds
+lines =  line_CONN+line_AEC2+line_ds+line_rg
 labels = [l.get_label() for l in lines]
 conn.legend(lines, labels, loc='right')
 # 统一两个 y 轴的比例
 # conn.set_ylim(0, 1.7)
 # AEC.set_ylim(0, 1.7)
-plt.savefig('.\Reference indicators\select-indicators5'+'.svg', format='svg',dpi=600)
+plt.savefig('.\Reference indicators\select-indicators7'+'.svg', format='svg',dpi=600)
 plt.show()
 
