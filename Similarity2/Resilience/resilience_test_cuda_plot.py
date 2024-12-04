@@ -39,7 +39,7 @@ lambdarank
 test53:
 ranknet+w(r_ij)
 """
-test = 'BCE+t4'
+test = 't1+CE+t4'
 
 # 全局修改字体
 config = {
@@ -55,11 +55,11 @@ rcParams.update(config)
 parser = argparse.ArgumentParser(
     description="train", formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
-parser.add_argument("--max_epoch", type=int, default=410)
-parser.add_argument("--lr", type=float, default=1e-7)
+parser.add_argument("--max_epoch", type=int, default=150)
+parser.add_argument("--lr", type=float, default=1e-6)
 parser.add_argument("--hidden_dim", default=1000, type=int)
 parser.add_argument("--output_dim", default=50, type=int)
-parser.add_argument("--num_layer", default=2, type=int)
+parser.add_argument("--num_layer", default=3, type=int)
 parser.add_argument("--weight_decay", type=float, default=1e-3)
 args = parser.parse_args()
 args.cuda = torch.cuda.is_available()
@@ -92,7 +92,7 @@ location = location_file['arr_0']
 在选择图的基础上获得鲁棒图
 节点临界分数：鲁棒图中去掉该节点，图鲁棒性大幅下降
 """
-selected_node  = wpr_rank[:select_node]
+selected_node = wpr_rank[:select_node]
 fea_list = find_value_according_index_list(fea_o, selected_node)
 location_list = find_value_according_index_list(location, selected_node)
 unselected_node = wpr_rank[select_node+1:114]   # 相对重要的前100个
@@ -105,8 +105,8 @@ args.input_dim = data_num
 print('input_dim: ',args.input_dim)
 ILGR_model_test = ILGRModel_test(args.input_dim, args.hidden_dim, args.output_dim, args.num_layer, args).to(device)
 optimizer = torch.optim.Adam(ILGR_model_test.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-# loss_CrossEntropy = nn.CrossEntropyLoss()
-loss_CrossEntropy = nn.BCEWithLogitsLoss()
+loss_CrossEntropy = nn.CrossEntropyLoss()
+# loss_CrossEntropy = nn.BCEWithLogitsLoss()   ############################################################################
 scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.01, patience=1, cooldown = 1,verbose=True)
 
 # 重新构图，摘取特征值，计算关键性评分（弹性分数）
@@ -179,7 +179,7 @@ for epoch in range(args.max_epoch):  # 假设训练100个epoch
     """
 
 
-    # CrossEntropy loss  + netrank
+    # CrossEntropy loss  + test4
     r_ij = [] # 真实值
     y_hat_ij = []  # 预测值
     for i in range(len(scores_tensor_normal) - 1):
@@ -196,7 +196,6 @@ for epoch in range(args.max_epoch):  # 假设训练100个epoch
     # p_y_ij = F.sigmoid(y_hat_ij_tensor).to(device)
     # loss = loss_CrossEntropy(p_y_ij, p_r_ij)
     loss = loss_CrossEntropy(y_hat_ij_tensor, r_ij_tensor)
-
 
 
     loss.backward(retain_graph=True)
@@ -229,13 +228,15 @@ torch.save(ILGR_model_test, './model_save/'+test+'_e_' + str(args.max_epoch) + '
 np.savetxt('./scores_save/scores_epoch_' + str(args.max_epoch) + '_lr_'+ str(args.lr)+'_'+str(formatted_time)+'.txt', scores_tensor.cpu() .detach().numpy())
 np.savetxt('./scores_save/softsort_normal_epoch_' + str(args.max_epoch) + '_lr_'+ str(args.lr)+'_'+str(formatted_time)+'.txt', scores_tensor_normal.cpu() .detach().numpy())
 
+
 location_list_a = np.array(location_list)
+# print(location_list_a)
 un_location_list_a = np.array(un_location_list)
-plt.scatter(un_location_list_a[:,0], un_location_list_a[:,1], s=15, c=scores_tensor_normal.cpu().detach().numpy(), cmap='Greens')
-plt.scatter(location_list_a[:,0], location_list_a[:,1], s=20, c='#f44336')  # selected_node
+plt.scatter(un_location_list_a[:,0], un_location_list_a[:,1], s=15, c=scores_tensor_normal.cpu().detach().numpy(), cmap='Greens_r')
+plt.colorbar()
+plt.scatter(location_list_a[:-1,0], location_list_a[:-1,1], s=20, c='#f44336')  # selected_node
 plt.xlabel('Longitude')
 plt.ylabel('Latitude')
-plt.colorbar()
 plt.title('softsort_normal')
 plt.savefig('./scores_save/'+test+'_softsort_normal_epoch_' + str(args.max_epoch) + '_lr_'+ str(args.lr)+'_'+str(formatted_time)+'.svg', format='svg')
 plt.show()

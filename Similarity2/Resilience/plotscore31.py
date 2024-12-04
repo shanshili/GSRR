@@ -1,7 +1,7 @@
 import sys
 
 # 将外部包的路径添加到 sys.path
-sys.path.append('D:\Tjnu-p\ML-learning\similarity2\MGC-RM')
+sys.path.append('F:\Tjnu-p\ML-learning\similarity2\MGC-RM')
 # 现在可以导入外部包了
 from utils import find_value_according_index_list, robustness_score
 import numpy as np
@@ -67,7 +67,7 @@ file_R_Rg_tensor = 'R_Rg_tensor_99'
 # softsort_normal_epoch_210_lr_1e-07_20241203_114951
 # softsort_normal_epoch_400_lr_1e-07_20241202_101508
 #softsort_normal_epoch_210_lr_1e-07_20241203_122747
-file_softsort_normal = 'softsort_normal_epoch_350_lr_1e-06_20241127_180601'
+file_softsort_normal = 'softsort_normal_epoch_210_lr_1e-07_20241203_122747'
 criticality_scores_normal = []
 R_Rg_tensor = []
 with open('./robustness_score/'+file_criticality_scores_normal+'.txt', 'r') as f:
@@ -89,7 +89,7 @@ with open('./scores_save/'+file_softsort_normal+'.txt', 'r') as f:
 # criticality_scores_normal 越大越重要
 softsort_normal_index = np.argsort(softsort_normal)   # 从小到大的索引，将数组从小到大排序后，每个元素在原数组中的位置。
 criticality_scores_normal_index = np.argsort(criticality_scores_normal)
-r_select = 20
+r_select = 99
 # r
 # select_index = criticality_scores_normal_index[:r_select]
 # y

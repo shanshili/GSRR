@@ -2,7 +2,7 @@ from matplotlib import rcParams
 import numpy as np
 import networkx as nx
 import sys
-sys.path.append('D:\Tjnu-p\ML-learning\similarity2\MGC-RM')
+sys.path.append('F:\Tjnu-p\ML-learning\similarity2\MGC-RM')
 from utils import (find_value_according_index_list,
                    natural_connectivity2,network_life,
                    MSE_node_feature,mean_squared_error,DS2,DS3,
@@ -53,13 +53,13 @@ lat = location[:, 1]
 
 file_criticality_scores_normal = 'criticality_scores_normal_99'
 file_R_Rg_tensor = 'R_Rg_tensor_99'
-file_scores = 'scores_epoch_410_lr_1e-07_20241203_140404'# 'scores_epoch_200_lr_1e-06_20241125_105756'
+file_scores = 'scores_epoch_210_lr_1e-07_20241203_122747'# 'scores_epoch_200_lr_1e-06_20241125_105756'
 #'softsort_normal_epoch_350_lr_1e-06_20241127_180601'
 # 'softsort_normal_epoch_250_lr_1e-05_20241127_184058'
 # 'softsort_normal_epoch_100_lr_3e-07_20241128_101450'
 # 'softsort_normal_epoch_410_lr_1e-07_20241203_140404'
 #
-file_softsort_normal = 'softsort_normal_epoch_210_lr_1e-07_20241203_122747'
+file_softsort_normal = 'softsort_normal_epoch_210_lr_1e-07_20241203_122604'
 criticality_scores_normal = []
 R_Rg_tensor = []
 with open('./robustness_score/'+file_criticality_scores_normal+'.txt', 'r') as f:
@@ -69,8 +69,8 @@ with open('./robustness_score/'+file_R_Rg_tensor+'.txt', 'r') as f:
     for line in f:
         R_Rg_tensor.append(float(list(line.strip('\n').split(','))[0]))
 
-print(criticality_scores_normal)
-print(R_Rg_tensor)
+# print(criticality_scores_normal)
+# print(R_Rg_tensor)
 scores = []
 softsort_normal = []
 with open('./scores_save/'+file_scores+'.txt', 'r') as f:
@@ -80,8 +80,8 @@ with open('./scores_save/'+file_softsort_normal+'.txt', 'r') as f:
     for line in f:
         softsort_normal.append(float(list(line.strip('\n').split(','))[0]))
 
-print(scores)
-print(softsort_normal)
+# print(scores)
+# print(softsort_normal)
 # criticality_scores_normal 越小越重要
 softsort_normal_index = np.argsort(softsort_normal)   # 从小到大的索引，将数组从小到大排序后，每个元素在原数组中的位置。
 r_select = 1
@@ -91,13 +91,14 @@ for i in select_index:
     print(i)
     print(softsort_normal[i])
 optimize_node_index = wpr_rank[:select_node]
+print(optimize_node_index)
 optimize_fea_list = find_value_according_index_list(fea_o, optimize_node_index)
 optimize_location_list = find_value_according_index_list(location, optimize_node_index)
 unselected_node = wpr_rank[select_node + 1:114]
 un_fea_list = find_value_according_index_list(fea_o, unselected_node)
 un_location_list = find_value_according_index_list(location, unselected_node)
 
-R_node_index = softsort_normal_index[r_select:]
+R_node_index = softsort_normal_index[:r_select]
 r_fea_list = find_value_according_index_list(un_fea_list, R_node_index)
 r_location_list = find_value_according_index_list(un_location_list, R_node_index)
 
