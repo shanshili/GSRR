@@ -86,7 +86,6 @@ args.input_dim = data_num
 print('input_dim: ',args.input_dim)
 ILGR_model = ILGRModel(args.input_dim, args.hidden_dim, args.output_dim, args.num_layer, args).to(device)
 optimizer = torch.optim.Adam(ILGR_model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-# loss_CrossEntropy = nn.CrossEntropyLoss()
 loss_CrossEntropy = nn.CrossEntropyLoss()
 scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=1, cooldown = 1,verbose=True)
 

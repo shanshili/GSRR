@@ -100,12 +100,24 @@ weights PageRank
 
 ### resilience_cuda
 
+CrossEntropy
+
 ### resilience_test_cuda_plot
 
-model test
+model test:
 
 ### resilience_cuda_eval
 
 ## 2
 
-### plotscore
+### plotscore2
+
+line charts
+
+### plotscore3
+
+for Rg
+
+### plotscore31
+
+for predict data
