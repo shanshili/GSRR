@@ -1,14 +1,16 @@
 __pychche__/**
-AutoEncoderSVG/**
+Learning/AutoEncoderSVG/**
 DAEGC/**
 GraphNeuralNetwork-Resilience-ComplexNetworks/**
 .idea/**
 venv/**
 Modules/**
-data/**
+Learning/data/**
 DAEGC/__pychche__/**
 dataset/**
 *.memmap
 *.npz
 *.pth
 
+/SCRR/Resilience/plotscore-no.py
+/SCRR/MGC-RM/no-Readout.py
