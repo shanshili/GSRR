@@ -12,5 +12,5 @@ dataset/**
 *.npz
 *.pth
 
-/SCRR/Resilience/plotscore-no.py
-/SCRR/MGC-RM/no-Readout.py
+/Resilience/plotscore-no.py
+/MGC-RM/no-Readout.py
