@@ -1,5 +1,13 @@
 # GSRR: Graph Similarity and Resilience Ranking
 
+![Gp75_Contribution_weights_2](.\readme.assets\Gp75_Contribution_weights_2.svg)![select-indicators6](.\readme.assets\select-indicators6.svg)
+
+![Gp75_MGC-RMselect14](.\readme.assets\Gp75_MGC-RMselect14.svg)
+
+![t1+CE+t4_softsort_normal_epoch_150_lr_1e-06_20241204_204900](.\readme.assets\t1+CE+t4_softsort_normal_epoch_150_lr_1e-06_20241204_204900.svg)
+
+![3y_select_20_softsort_normal_epoch_150_lr_1e-06_20241204_204900](.\readme.assets\3y_select_20_softsort_normal_epoch_150_lr_1e-06_20241204_204900.svg)
+
 
 
 # utils
