@@ -8,6 +8,7 @@ import matplotlib as mpl
 import matplotlib.cm as cm
 import matplotlib.colors as mcolors
 from matplotlib import rcParams
+from mpl_toolkits.axes_grid1 import make_axes_locatable  # 导入 make_axes_locatable
 
 # 全局修改字体
 config = {
@@ -91,13 +92,49 @@ def data_color_graph(data,locationgraph,location,epoch_range):
 def data_color_graph2(score,locationgraph,location,Gpn,color,labels):
     #locationgraph = location_graph(location)
     norm1 = mcolors.Normalize(vmin=np.min(score), vmax=np.max(score))
-    plt.figure()
+    fig, ax = plt.subplots()  # 明确创建一个新的图形和轴对象
     plt.title('Graph Pair: '+str(Gpn))
     nx.draw(locationgraph, pos=location, with_labels=labels,  alpha = 0.8, node_size=8,node_color= score, cmap = color,width = 0.6,edge_color = '#BBD6D8',font_size = 0)
-    # plt.colorbar(cm.ScalarMappable(norm=norm1, cmap=color), ax = )
-    plt.savefig('similarity score\Gp'+str(Gpn)+'.svg', format='svg')
-    # plt.show()
+    # 设置边框
+    ax = plt.gca()  # 获取当前的坐标轴实例
+    ax.set_axis_on()  # 打开坐标轴
+    ax.spines['bottom'].set_color('0')  # 设置边框颜色
+    ax.spines['top'].set_color('0')
+    ax.spines['right'].set_color('0')
+    ax.spines['left'].set_color('0')
+    ax.tick_params(which='both',  width=1, length=1, colors='black')  # 隐藏刻度线
+    # plt.colorbar(cm.ScalarMappable(norm=norm1, cmap=color), ax = None)# locationgraph )
+    sm = cm.ScalarMappable(cmap=color, norm=norm1)
+    sm.set_array([])  # 只是提供一个空数组，因为mappable没有关联的数据
+    plt.colorbar(sm, ax=ax)
+    plt.xlabel('Longitude')
+    plt.ylabel('Latitude')
+    plt.savefig('similarity score/bar3-Gp'+str(Gpn)+'.svg', format='svg')
+    plt.show()
 
+# 绘制—贡献权重图
+def data_color_graph3(score,locationgraph,location,color,labels):
+    #locationgraph = location_graph(location)
+    norm1 = mcolors.Normalize(vmin=np.min(score), vmax=np.max(score))
+    fig, ax = plt.subplots()  # 明确创建一个新的图形和轴对象
+    plt.title('Contribution weights')
+    nx.draw(locationgraph, pos=location, with_labels=labels,  alpha = 0.8, node_size=8,node_color= score, cmap = color,width = 0.8,edge_color = '#9585bd',font_size = 0)
+    # 设置边框
+    ax = plt.gca()  # 获取当前的坐标轴实例
+    ax.set_axis_on()  # 打开坐标轴
+    ax.spines['bottom'].set_color('0')  # 设置边框颜色
+    ax.spines['top'].set_color('0')
+    ax.spines['right'].set_color('0')
+    ax.spines['left'].set_color('0')
+    ax.tick_params(which='both',  width=1, length=1, colors='black')  # 隐藏刻度线
+    # plt.colorbar(cm.ScalarMappable(norm=norm1, cmap=color), ax = None)# locationgraph )
+    sm = cm.ScalarMappable(cmap=color, norm=norm1)
+    sm.set_array([])  # 只是提供一个空数组，因为mappable没有关联的数据
+    plt.colorbar(sm, ax=ax)
+    plt.xlabel('Longitude')
+    plt.ylabel('Latitude')
+    plt.savefig('similarity score/bar4.svg', format='svg')
+    plt.show()
 
 
 """

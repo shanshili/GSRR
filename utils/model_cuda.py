@@ -407,16 +407,16 @@ def ranking_loss3(scores, true_ranks):
 
 
 
-def softsort(x, tau=0.1):
-    # 计算每对元素的差值
-    pairwise_diff = x.unsqueeze(1) - x.unsqueeze(0)
-    # 计算相似度矩阵
-    similarity_matrix = -pairwise_diff.abs() / tau
-    # 计算软排序矩阵
-    soft_permutation_matrix = F.softmax(similarity_matrix, dim=1)
-    # 计算软排序后的张量
-    soft_sorted_x = soft_permutation_matrix @ x
-    return soft_sorted_x
+# def softsort(x, tau=0.1):
+#     # 计算每对元素的差值
+#     pairwise_diff = x.unsqueeze(1) - x.unsqueeze(0)
+#     # 计算相似度矩阵
+#     similarity_matrix = -pairwise_diff.abs() / tau
+#     # 计算软排序矩阵
+#     soft_permutation_matrix = F.softmax(similarity_matrix, dim=1)
+#     # 计算软排序后的张量
+#     soft_sorted_x = soft_permutation_matrix @ x
+#     return soft_sorted_x
 
 
 # test4

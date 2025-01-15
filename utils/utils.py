@@ -1,8 +1,8 @@
 import networkx as nx
 import numpy as np
 import math
-from GraphConstruct import topological_features_construct
-from model import AutoEncoder
+from .GraphConstruct import topological_features_construct
+from .model import AutoEncoder
 import torch
 from sklearn.preprocessing import MinMaxScaler
 from torch import nn

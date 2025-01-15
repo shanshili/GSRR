@@ -1,3 +1,16 @@
+import sys
+import os
+
+# 获取当前文件所在的目录
+current_dir = os.path.dirname(os.path.abspath(__file__))
+# 找到项目的根目录（假设 utils 和 MGC-RM 是同级目录）
+project_root = os.path.abspath(os.path.join(current_dir, '..'))
+
+# 将项目根目录添加到 Python 的搜索路径中
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+from utils.GraphConstruct import data_color_graph3
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -21,10 +34,11 @@ with open('similarity score/zGP_75_node_450_data_2000model_20241102_211834.txt',
 Gpn = 75
 node = 450
 data_num = 2000
-select_node = 20
+select_node = 14
 adj_ori = np.load('./origin_data/adj_ori'+'_node_'+str(node)+'_data_'+str(data_num)+'.npz', allow_pickle=True)
 location_file = np.load('./origin_data/location'+'_node_'+str(node)+'_data_'+str(data_num)+'.npz', allow_pickle=True)
 A = adj_ori['arr_0']
+G_o = nx.Graph(A)
 G = nx.Graph(adj_ori['arr_0'])
 location = location_file['arr_0']
 lon = location[:,0]
@@ -96,14 +110,25 @@ plt.show()
 
 
 selected_node = node_list[:select_node]    # 倒数最重要的select_node个
-plt.scatter(lon, lat,s = 15, c='gainsboro')
-plt.scatter(lon[selected_node], lat[selected_node], s = 20,c='#7e2f8e')
+plt.scatter(lon, lat,s = 15, c='gainsboro', label='All nodes')
+plt.scatter(lon[selected_node], lat[selected_node], s = 30,c='#7e2f8e',label='Optimized nodes')
 plt.xlabel('Longitude')
 plt.ylabel('Latitude')
-plt.title('MGC-RM')
-plt.savefig('WPR_result\Gp' + str(Gpn) +'_MGC-RM'+'select'+str(select_node) +'.svg', format='svg')
+plt.title('Optimized nodes subset')
+plt.legend()
+plt.savefig('WPR_result\Gp' + str(Gpn) +'_MGC-RM'+'select'+str(select_node) +'2.svg', format='svg')
 plt.show()
 
+plt.scatter(lon, lat,s = 15, c='gainsboro', label='All nodes')
+plt.scatter(lon[selected_node], lat[selected_node], s = 30,c='#7e2f8e',label='Optimized nodes')
+plt.scatter(lon[node_list[select_node] ], lat[node_list[select_node] ], s = 30,c='#d400fe',label='Contribution weights backup node')
+plt.xlabel('Longitude')
+plt.ylabel('Latitude')
+plt.title('')
+plt.legend()
+plt.savefig('WPR_result\Gp' + str(Gpn) +'_MGC-RM'+'select'+str(select_node) +'3.svg', format='svg')
+plt.show()
 
+data_color_graph3(contribution_weights,G_o,location,'plasma_r',False)
 
 

@@ -1,3 +1,15 @@
+import sys
+import os
+
+# 获取当前文件所在的目录
+current_dir = os.path.dirname(os.path.abspath(__file__))
+# 找到项目的根目录（假设 utils 和 MGC-RM 是同级目录）
+project_root = os.path.abspath(os.path.join(current_dir, '..'))
+
+# 将项目根目录添加到 Python 的搜索路径中
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
 from utils.GraphConstruct import data_color_graph2
 from utils.dataprocess import normalization
 import numpy as np
@@ -31,7 +43,7 @@ location = location_file['arr_0']
 
 
 score=[]
-gpn = 755
+gpn = 75
 error_point = 328
 # 标号为数组下标
 adjust =  1.463619555579498410e-04#75-329的数据 #1.949527258053421974e-05#159-328# #1.664528177166357636e-04#310-21#

@@ -93,7 +93,7 @@ for i, (location, fea) in enumerate(zip(un_location_list, un_fea_list)):
     location_list[select_node] = location
     fea_list[select_node] = fea
     R_g[i], R_A[i] = location_graph(location_list)
-    R_Rg.append(torch.tensor(robustness_score(R_g[i])))
+    R_Rg.append(torch.tensor(robustness_score(R_g[i]))) # n*1
 
 # fea_list_tensor = torch.tensor(np.array(fea_list), requires_grad=True).requires_grad_(True).to(device)
 R_Rg_tensor = torch.stack(R_Rg, dim=0).requires_grad_(True).to(device)
