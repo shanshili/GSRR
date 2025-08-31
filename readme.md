@@ -16,31 +16,31 @@
 
 ### 📁 utils
 包含项目通用工具函数，分为以下子模块：
-- [dataprocess](file://D:\Tjnu-p\Mp\GSRR\utils\dataprocess.py#L0-L0): 数据预处理模块
-- [GraphConstruct](file://D:\Tjnu-p\Mp\GSRR\utils\GraphConstruct.py#L0-L0): 图构建相关函数
-- [utils](file://D:\Tjnu-p\Mp\GSRR\utils\utils.py#L0-L0): 其他通用工具函数
+- [dataprocess](file://GSRR\utils\dataprocess.py#L0-L0): 数据预处理模块
+- [GraphConstruct](file://GSRR\utils\GraphConstruct.py#L0-L0): 图构建相关函数
+- [utils](file://GSRR\utils\utils.py#L0-L0): 其他通用工具函数
 
 ### 📁 model
 模型定义模块：
-- [GAT](file://D:\Tjnu-p\Mp\GSRR\utils\model.py#L9-L20): 基于图注意力网络（GAT）的模型实现
-- [model_cuda](file://D:\Tjnu-p\Mp\GSRR\utils\model_cuda.py#L0-L0): 支持 CUDA 加速的模型版本
-- [model_cuda2](file://D:\Tjnu-p\Mp\GSRR\utils\model_cuda2.py#L0-L0): 改进版 GAT 模型，包含 [NodeEmbeddingModule2](file://D:\Tjnu-p\Mp\GSRR\utils\model_cuda2.py#L106-L172)
+- [GAT](file://GSRR\utils\model.py#L9-L20): 基于图注意力网络（GAT）的模型实现
+- [model_cuda](file://GSRR\utils\model_cuda.py#L0-L0): 支持 CUDA 加速的模型版本
+- [model_cuda2](file://GSRR\utils\model_cuda2.py#L0-L0): 改进版 GAT 模型，包含 [NodeEmbeddingModule2](file://GSRR\utils\model_cuda2.py#L106-L172)
 
 ### 📁 MGC-RM
 多粒度交叉表示与匹配模块（Multi-Granularity Cross Representation and Matching）：
-- [perturbation](file://D:\Tjnu-p\Mp\GSRR\MGC-RM\perturbation.py#L0-L0) / [perturbation2](file://D:\Tjnu-p\Mp\GSRR\MGC-RM\perturbation2.py#L0-L0): 生成扰动图
-- [MFC_RMF](file://D:\Tjnu-p\Mp\GSRR\MGC-RM\MFC_RMF.py#L0-L0) / [MFC_RMF2](file://D:\Tjnu-p\Mp\GSRR\MGC-RM\MFC_RMF2.py#L0-L0) / [MFC_RMF2cuda2](file://D:\Tjnu-p\Mp\GSRR\MGC-RM\MFC_RMF2cuda2.py#L0-L0): 图相似性训练与预测模块
-- [plotpredictloss](file://D:\Tjnu-p\Mp\GSRR\MGC-RM\plotpredictloss.py#L0-L0) / [plotscore](file://D:\Tjnu-p\Mp\GSRR\MGC-RM\plotscore.py#L0-L0): 可视化预测损失与相似度得分
-- [PageRank2](file://D:\Tjnu-p\Mp\GSRR\MGC-RM\PageRank2.py#L0-L0): 基于权重的 PageRank 算法
-- [Perform](file://D:\Tjnu-p\Mp\GSRR\MGC-RM\Perform.py#L0-L0): 性能评估模块
+- [perturbation](file://GSRR\MGC-RM\perturbation.py#L0-L0) / [perturbation2](file://GSRR\MGC-RM\perturbation2.py#L0-L0): 生成扰动图
+- [MFC_RMF](file://GSRR\MGC-RM\MFC_RMF.py#L0-L0) / [MFC_RMF2](file://GSRR\MGC-RM\MFC_RMF2.py#L0-L0) / [MFC_RMF2cuda2](file://GSRR\MGC-RM\MFC_RMF2cuda2.py#L0-L0): 图相似性训练与预测模块
+- [plotpredictloss](file://GSRR\MGC-RM\plotpredictloss.py#L0-L0) / [plotscore](file://GSRR\MGC-RM\plotscore.py#L0-L0): 可视化预测损失与相似度得分
+- [PageRank2](file://GSRR\MGC-RM\PageRank2.py#L0-L0): 基于权重的 PageRank 算法
+- [Perform](file://GSRR\MGC-RM\Perform.py#L0-L0): 性能评估模块
 - `no-readout`: 不含 readout 层的变体实验
 
 ### 📁 Resilience
 网络弹性评估模块：
-- [resilience-cpu](file://D:\Tjnu-p\Mp\GSRR\Resilience\resilience-cpu.py#L0-L0) / [resilience_cuda](file://D:\Tjnu-p\Mp\GSRR\Resilience\resilience_cuda.py#L0-L0): 基于 CPU 和 GPU 的弹性训练与评估
-- [resilience_train_test](file://D:\Tjnu-p\Mp\GSRR\Resilience\resilience_train_test.py#L0-L0) / [resilience_eval](file://D:\Tjnu-p\Mp\GSRR\Resilience\resilience_eval.py#L0-L0): 模型测试与评估模块
-- [plotscore2](file://D:\Tjnu-p\Mp\GSRR\Resilience\plotscore2.py#L0-L0) / [plotscore-r](file://D:\Tjnu-p\Mp\GSRR\Resilience\plotscore-r.py#L0-L0) / [plotscore-y](file://D:\Tjnu-p\Mp\GSRR\Resilience\plotscore-y.py#L0-L0): 不同指标的可视化分析
-- [R-Perform](file://D:\Tjnu-p\Mp\GSRR\Resilience\R-Perform.py#L0-L0): 弹性评估指标计算
+- [resilience-cpu](file://GSRR\Resilience\resilience-cpu.py#L0-L0) / [resilience_cuda](file://GSRR\Resilience\resilience_cuda.py#L0-L0): 基于 CPU 和 GPU 的弹性训练与评估
+- [resilience_train_test](file://GSRR\Resilience\resilience_train_test.py#L0-L0) / [resilience_eval](file://GSRR\Resilience\resilience_eval.py#L0-L0): 模型测试与评估模块
+- [plotscore2](file://GSRR\Resilience\plotscore2.py#L0-L0) / [plotscore-r](file://GSRR\Resilience\plotscore-r.py#L0-L0) / [plotscore-y](file://GSRR\Resilience\plotscore-y.py#L0-L0): 不同指标的可视化分析
+- [R-Perform](file://GSRR\Resilience\R-Perform.py#L0-L0): 弹性评估指标计算
 
 ---
 
