@@ -1,4 +1,5 @@
 # GSRR: Graph Similarity and Resilience Ranking
+[Li C, Du R, Wu J, et al. Resilient Optimization of Sensor Networks Deployment Based on Graph Similarity Learning and Node Resilience Prediction[C]//2025 6th International Conference on Computing, Networks and Internet of Things (CNIOT). IEEE, 2025: 1-5.](https://ieeexplore.ieee.org/abstract/document/11070445)
 
 ![Gp75_Contribution_weights_2](https://github.com/shanshili/GSRR/blob/855eee837c98962f57efd8bce4fb8e3251ae6936/readme.assets/Gp75_Contribution_weights_2.svg)![select-indicators6](https://github.com/shanshili/GSRR/blob/855eee837c98962f57efd8bce4fb8e3251ae6936/readme.assets/select-indicators6.svg)
 
